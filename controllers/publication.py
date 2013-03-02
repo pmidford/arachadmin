@@ -15,8 +15,11 @@ def show():
     return dict(publication=publication)
     
 def enter():
-    publication = db.publication(request.args(0,cast=int)) or redirect(URL('index'))
-    form = SQLFORM(db.publication,publication)
+    if request.args(0):
+        publication = db.publication(request.args(0,cast=int))
+        form = SQLFORM(db.publication,publication)
+    else:
+        form = SQLFORM(db.publication)
     if form.process().accepted:
         response.flash = 'publication table modified'
     elif form.errors:

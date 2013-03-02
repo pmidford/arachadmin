@@ -1,3 +1,16 @@
 {{extend 'layout.html'}}
-<h1>This is the usage/list.html template</h1>
-{{=BEAUTIFY(response._vars)}}
+<h1>List of term usages</h1>
+{{headers=['id','term','publication taxon','valid taxon','anatomy','other participants','NBO term','ABO term','GO term','description']}}
+{{=TABLE(
+  THEAD(TR(*[TH(header) for header in headers])),
+  TBODY(*[TR(TD(row.id),
+             TD(row.behavior_term),
+             TD(row.publication_taxon),
+             TD(row.resolved_taxon),
+             TD(row.anatomy),
+             TD(row.participant_list),
+             TD(row.nbo_term_name+';'+row.nbo_term_id),
+             TD(row.abo_term),
+             TD(row.obo_term_name+';'+row.obo_term_id),
+             TD(row.description))
+         for row in usages]))}}

@@ -11,7 +11,6 @@ password="inukumo"
 dbname="arachadmin"
 host="localhost"
 
-#db = DAL('sqlite://storage.sqlite',pool_size=1,check_reserved=['all'])
 db = DAL("mysql://%s:%s@%s/%s" % (user, password, host, dbname), migrate=True ) 
 
 db.define_table('publication',
