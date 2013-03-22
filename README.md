@@ -1,0 +1,1 @@
+This is a web2py tool for managing information going into arachnolingua (there will be an accompanying tool that should handle a lot of the OWL generation).
