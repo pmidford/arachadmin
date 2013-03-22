@@ -14,8 +14,11 @@ def show():
     return dict(usage=usage)
     
 def enter():
-    usage = db.term_usage(request.args(0,cast=int)) or redirect(URL('index'))
-    form = SQLFORM(db.term_usage,usage)
+    if request.args(0):
+        usage = db.term_usage(request.args(0,cast=int))
+        form = SQLFORM(db.term_usage,usage)
+    else:
+        form = SQLFORM(db.term_usage)
     if form.process().accepted:
         response.flash = 'usage table modified'
     elif form.errors:

@@ -1,15 +1,26 @@
 import datetime, socket, os, sys
 from ConfigParser import SafeConfigParser
 
-defaults = dict(host="localhost", user="arachnolingua", password="inukumo", dbname="arachadmin")
+defaults = dict(host="localhost", user="user", password="userpass", dbname="arachadmin")
 
-#conf = SafeConfigParser(defaults)
+conf = SafeConfigParser(defaults)
 
-#user = password = dbname = host = ''
-user="arachnolingua"
-password="inukumo"
-dbname="arachadmin"
-host="localhost"
+user = password = dbname = host = ''
+
+if os.path.isfile("applications/%s/private/localconfig" % request.application):
+    conf.read("applications/%s/private/localconfig" % request.application)
+    host = conf.get("db", "host")
+    user = conf.get("db", "user")
+    password = conf.get("db", "password")
+    dbname = conf.get("db", "dbname")
+
+else:
+    conf.read("applications/%s/private/config" % request.application)
+    host = conf.get("db", "host")
+    user = conf.get("db", "user")
+    password = conf.get("db", "password")
+    dbname = conf.get("db", "dbname")
+
 
 db = DAL("mysql://%s:%s@%s/%s" % (user, password, host, dbname), migrate=True ) 
 

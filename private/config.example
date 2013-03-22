@@ -1,0 +1,5 @@
+[db]
+dbname=arachadmin
+host=localhost
+user=user
+password=userpass
