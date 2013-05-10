@@ -12,7 +12,8 @@
 
 def index():
     publications = db().select(db.publication.ALL, orderby=db.publication.id)
-    return dict(publications=publications)
+    usages = db().select(db.term_usage.ALL, orderby=db.term_usage.id)
+    return dict(publications=publications,usages=usages)
 
 def list_publications():
     publications = db().select(db.publication.ALL, orderby=db.publication.id)

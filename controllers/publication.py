@@ -2,15 +2,14 @@
 # try something like
 
 def index():
-    publications = db().select(db.publication.ALL, orderby=db.publication.id)
-    return dict(publications=publications)
+    redirect(URL('list'))
 
 def list():
     publications = db().select(db.publication.ALL, orderby=db.publication.id)
     return dict(publications=publications)
 
 def show():
-    publication = db.publication(request.args(0,cast=int)) or redirect(URL('index'))
+    publication = db.publication(request.args(0,cast=int)) or redirect(URL('list'))
     form = SQLFORM(db.publication)
     return dict(publication=publication)
     

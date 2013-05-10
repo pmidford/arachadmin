@@ -1,15 +1,14 @@
 # coding: utf8
 # try something like
 def index():
-    usages = db().select(db.term_usage.ALL, orderby=db.term_usage.id)
-    return dict(usages=usages)
-
+    redirect(URL('list'))
+    
 def list():
     usages = db().select(db.term_usage.ALL, orderby=db.term_usage.id)
     return dict(usages=usages)
     
 def show():
-    usage = db.term_usage(request.args(0,cast=int)) or redirect(URL('index'))
+    usage = db.term_usage(request.args(0,cast=int)) or redirect(URL('list'))
     form = SQLFORM(db.term_usage)
     return dict(usage=usage)
     
