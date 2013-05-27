@@ -42,14 +42,27 @@ db.define_table('publication',
                 Field('publication_year','string'),
                 Field('doi','string'),
                 format='%(author_list)s %(publication_year)s')
-                
+                                
+db.define_table('taxon',
+                Field('name','string'),
+                Field('ncbi_id','string'),
+                Field('ottol_id','string'),
+                Field('author','string'),
+                Field('year','string'))
+               
+db.define_table('synonym',
+                Field('name','string'),
+                Field('author','string'),
+                Field('year','string'),
+                Field('valid_name',db.taxon,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id', '%(name)s'))))
+
 db.define_table('term_usage',
                 Field('behavior_term','string'),
                 Field('publication_taxon','string'),
                 Field('direct_source',db.publication,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db, 'publication.id', '%(author_list)s %(publication_year)s'))),
                 Field('evidence','string'),
                 Field('secondary_source',db.publication,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db, 'publication.id', '%(author_list)s %(publication_year)s'))),
-                Field('resolved_taxon','string'),
+                ##Field('resolved_taxon_name','string'),
                 Field('anatomy','string'),
                 Field('participant_list','string'),
                 Field('obo_term_name','string'),
@@ -57,8 +70,10 @@ db.define_table('term_usage',
                 Field('nbo_term_name','string'),
                 Field('nbo_term_id','string'),
                 Field('abo_term','string'),
-                Field('description','text'))
+                Field('description','text'),
+                Field('resolved_taxon_id',db.taxon,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id', '%(name)s'))))
                 
+                                                
 #########################################################################
 ## Define your tables below (or better in another model file) for example
 ##

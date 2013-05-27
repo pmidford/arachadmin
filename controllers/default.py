@@ -13,7 +13,9 @@
 def index():
     publications = db().select(db.publication.ALL, orderby=db.publication.id)
     usages = db().select(db.term_usage.ALL, orderby=db.term_usage.id)
-    return dict(publications=publications,usages=usages)
+    taxa = db().select(db.taxon.ALL, orderby=db.taxon.id)
+    synonyms = db().select(db.synonym.ALL, orderby=db.synonym.id)
+    return dict(publications=publications,usages=usages,taxa=taxa,synonyms=synonyms)
 
 def list_publications():
     publications = db().select(db.publication.ALL, orderby=db.publication.id)
