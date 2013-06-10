@@ -12,18 +12,18 @@
 
 def index():
     publications = db().select(db.publication.ALL, orderby=db.publication.id)
-    usages = db().select(db.term_usage.ALL, orderby=db.term_usage.id)
+    assertions = db().select(db.assertion.ALL, orderby=db.assertion.id)
     taxa = db().select(db.taxon.ALL, orderby=db.taxon.id)
-    synonyms = db().select(db.synonym.ALL, orderby=db.synonym.id)
-    return dict(publications=publications,usages=usages,taxa=taxa,synonyms=synonyms)
+    taxon_synonyms = db().select(db.taxon_synonym.ALL, orderby=db.taxon_synonym.id)
+    return dict(publications=publications,assertions=assertions,taxa=taxa,synonyms=taxon_synonyms)
 
 def list_publications():
     publications = db().select(db.publication.ALL, orderby=db.publication.id)
     return dict(publications=publications)
 
-def list_usages():
-    usages = db().select(db.term_usage.ALL, orderby=db.term_usage.id)
-    return dict(usages=usages)
+def list_assertions():
+    assertions = db().select(db.assertion.ALL, orderby=db.assertion.id)
+    return dict(assertions=assertions)
     
 def show():
     publication = db.publication(request.args(0,cast=int)) or redirect(URL('index'))

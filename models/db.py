@@ -41,6 +41,7 @@ db.define_table('publication',
                 Field('publication_date','string'),
                 Field('publication_year','string'),
                 Field('doi','string'),
+                Field('generated_id','string',writable=False),
                 format='%(author_list)s %(publication_year)s')
                                 
 db.define_table('taxon',
@@ -48,31 +49,63 @@ db.define_table('taxon',
                 Field('ncbi_id','string'),
                 Field('ottol_id','string'),
                 Field('author','string'),
-                Field('year','string'))
+                Field('year','string'),
+                Field('generated_id','string',writable=False),
+                format='%(name)s')
                
-db.define_table('synonym',
+db.define_table('taxon_synonym',
                 Field('name','string'),
                 Field('author','string'),
                 Field('year','string'),
-                Field('valid_name',db.taxon,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id', '%(name)s'))))
+                Field('valid_name','reference taxon',ondelete='NO ACTION'), 
+                format='%(name) (synonym)')
 
-db.define_table('term_usage',
-                Field('behavior_term','string'),
-                Field('publication_taxon','string'),
-                Field('direct_source',db.publication,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db, 'publication.id', '%(author_list)s %(publication_year)s'))),
-                Field('evidence','string'),
-                Field('secondary_source',db.publication,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db, 'publication.id', '%(author_list)s %(publication_year)s'))),
-                ##Field('resolved_taxon_name','string'),
-                Field('anatomy','string'),
-                Field('participant_list','string'),
-                Field('obo_term_name','string'),
-                Field('obo_term_id','string'),
-                Field('nbo_term_name','string'),
-                Field('nbo_term_id','string'),
-                Field('abo_term','string'),
-                Field('description','text'),
-                Field('resolved_taxon_id',db.taxon,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id', '%(name)s'))))
+db.define_table('anatomy_term',
+                Field('name','string'),
+                Field('spd_id','string'),
+                Field('obo_id','string'),
+                Field('generated_id','string',writable=False),
+                format='%(name)',
+                migrate=True)                
+
+db.define_table('behavior_term',
+                Field('name','string'),
+                Field('nbo_id','string'),
+                Field('obo_id','string'),
+                Field('abo_id','string'),
+                Field('generated_id','string',writable=False),
+                format='%(name)')                
+
+db.define_table('behavior_synonym',
+                Field('name','string'),
+                Field('primary_term',db.behavior_term,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id','%(name)s'))),
+                format='%(name) (synonym)')
+
+db.define_table('evidence',
+                Field('name','string'),
+                Field('obo_id','string'),
+                Field('code','string'))
+
+db.define_table('assertion',
+                Field('publication',db.publication))
                 
+db.define_table('behavior2assertion',
+                Field('behavior','reference behavior_term'),
+                Field('assertion','reference assertion'))
+
+db.define_table('anatomy2assertion',
+                Field('anatomy_term','reference anatomy_term'),
+                Field('assertion','reference assertion'))
+
+db.define_table('actor2assertion',
+                Field('actorID','string'),
+                Field('assertion','reference assertion'))
+    
+                            
+db.define_table('participant2assertion',
+                Field('participantclass','reference taxon'),
+                Field('participantID','string'),
+                Field('assertion','reference assertion'))
                                                 
 #########################################################################
 ## Define your tables below (or better in another model file) for example
