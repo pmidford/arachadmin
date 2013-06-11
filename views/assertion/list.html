@@ -1,0 +1,13 @@
+{{extend 'layout.html'}}
+<html>
+    <head></head>
+    <body>
+        <h1>Current assertions</h1>
+        <ul>
+            {{for assertion in assertions:}}
+            {{=LI("assertion #" , assertion.id, " reported in ", assertion.publication)}}
+            {{pass}}
+        </ul>
+        {{response.toolbar()}}
+    </body>
+</html>

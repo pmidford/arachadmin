@@ -81,8 +81,8 @@ db.define_table('behavior_synonym',
                 Field('primary_term',db.behavior_term,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id','%(name)s'))),
                 format='%(name) (synonym)')
 
-db.define_table('evidence',
-                Field('name','string'),
+db.define_table('evidence_code',
+                Field('long_name','string'),
                 Field('obo_id','string'),
                 Field('code','string'))
 

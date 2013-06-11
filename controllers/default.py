@@ -11,11 +11,14 @@
 
 
 def index():
-    publications = db().select(db.publication.ALL, orderby=db.publication.id)
-    assertions = db().select(db.assertion.ALL, orderby=db.assertion.id)
-    taxa = db().select(db.taxon.ALL, orderby=db.taxon.id)
-    taxon_synonyms = db().select(db.taxon_synonym.ALL, orderby=db.taxon_synonym.id)
-    return dict(publications=publications,assertions=assertions,taxa=taxa,synonyms=taxon_synonyms)
+    result = dict()
+    result['publications'] = db().select(db.publication.ALL, orderby=db.publication.id)
+    result['assertions'] = db().select(db.assertion.ALL, orderby=db.assertion.id)
+    result['taxa'] = db().select(db.taxon.ALL, orderby=db.taxon.id)
+    #taxon_synonyms = db().select(db.taxon_synonym.ALL, orderby=db.taxon_synonym.id)
+    result['behavior_terms'] = db().select(db.behavior_term.ALL, orderby=db.behavior_term.id)
+    result['anatomy_terms'] = db().select(db.anatomy_term.ALL, orderby=db.anatomy_term.id)
+    return result
 
 def list_publications():
     publications = db().select(db.publication.ALL, orderby=db.publication.id)
