@@ -87,7 +87,14 @@ db.define_table('evidence_code',
                 Field('code','string'))
 
 db.define_table('assertion',
-                Field('publication',db.publication))
+                Field('publication',db.publication),
+                Field('publication_behavior','string'),
+                Field('behavior_term','integer'),
+                Field('publication_taxon','string'),
+                Field('taxon','reference taxon',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id','%(name)s'))),
+                Field('publication_anatomy','string'),
+                Field('evidence','integer'))
+                
                 
 db.define_table('behavior2assertion',
                 Field('behavior','reference behavior_term'),

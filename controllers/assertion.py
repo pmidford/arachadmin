@@ -14,7 +14,7 @@ def show():
     
 def enter():
     if request.args(0):
-        usage = db.term_usage(request.args(0,cast=int))
+        assertion = db.assertion(request.args(0,cast=int))
         form = SQLFORM(db.assertion,assertion)
     else:
         form = SQLFORM(db.assertion)

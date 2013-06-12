@@ -4,22 +4,21 @@ def index():
     redirect(URL('list'))
     
 def list():
-    usages = db().select(db.term_usage.ALL, orderby=db.term_usage.id)
-    return dict(usages=usages)
+    return dict(anatomy_terms=db().select(db.anatomy_term.ALL, orderby=db.anatomy_term.id))
     
 def show():
-    usage = db.term_usage(request.args(0,cast=int)) or redirect(URL('list'))
-    form = SQLFORM(db.term_usage)
-    return dict(usage=usage)
+    anatomy_terms = db.anatomy_term(request.args(0,cast=int)) or redirect(URL('list'))
+    form = SQLFORM(db.anatomy_term)
+    return dict(anatomy_terms=anatomy_terms)
     
 def enter():
     if request.args(0):
-        usage = db.term_usage(request.args(0,cast=int))
-        form = SQLFORM(db.term_usage,usage)
+        anatomy_terms = db.anatomy_term(request.args(0,cast=int))
+        form = SQLFORM(db.anatomy_term,anatomy_terms)
     else:
-        form = SQLFORM(db.term_usage)
+        form = SQLFORM(db.anatomy_term)
     if form.process().accepted:
-        response.flash = 'usage table modified'
+        response.flash = 'behavior term table modified'
     elif form.errors:
         response.false = 'errors in submission'
     return dict(form=form)
