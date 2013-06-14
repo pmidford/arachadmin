@@ -1,20 +1,11 @@
 {{extend 'layout.html'}}
 <h1>List of anatomy terms</h1>
-{{headers=['id','type','dispensation','reviewed','downloaded','title','authors','publication','volume','issue','pages','date','year','doi']}}
+{{headers=['id','name','SPD id','OBO id','generated id']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
   TBODY(*[TR(TD(row.id),
-             TD(row.publication_type),
-             TD(row.dispensation),
-             TD(row.downloaded),
-             TD(row.reviewed),
-             TD(row.title),
-             TD(row.author_list),
-             TD(row.source_publication),
-             TD(row.volume),
-             TD(row.issue),
-             TD(row.page_range),
-             TD(row.publication_date),
-             TD(row.publication_year),
-             TD(row.doi))
-         for row in publications]))}}
+             TD(row.name),
+             TD(row.spd_id),
+             TD(row.obo_id),
+             TD(row.generated_id))
+         for row in anatomy_terms]))}}
