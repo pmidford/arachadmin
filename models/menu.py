@@ -24,7 +24,13 @@ response.google_analytics_id = None
 #########################################################################
 
 response.menu = [
-    (T('Home'), False, URL('default', 'index'), [])
+    (T('Home'), False, URL('default', 'index'), []),
+    (T('Lists'), False, URL('default', 'index'),[       
+        ('Publications', False, URL('publication','list', [])),
+        ('Assertions', False, URL('assertion','list',[])),
+        ('Behavior Terms', False, URL('behavior_term','list',[])),
+        ('Anatomy Terms', False, URL('anatomy_term','list'), [])
+    ])
 ]
 
 DEVELOPMENT_MENU = True

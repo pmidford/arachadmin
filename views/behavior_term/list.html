@@ -1,20 +1,12 @@
 {{extend 'layout.html'}}
-<h1>List of publications</h1>
-{{headers=['id','type','dispensation','reviewed','downloaded','title','authors','publication','volume','issue','pages','date','year','doi']}}
+<h1>List of behavior terms</h1>
+{{headers=['id','name','NBO id','OBO id','ABO id','generated id']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
   TBODY(*[TR(TD(row.id),
-             TD(row.publication_type),
-             TD(row.dispensation),
-             TD(row.downloaded),
-             TD(row.reviewed),
-             TD(row.title),
-             TD(row.author_list),
-             TD(row.source_publication),
-             TD(row.volume),
-             TD(row.issue),
-             TD(row.page_range),
-             TD(row.publication_date),
-             TD(row.publication_year),
-             TD(row.doi))
-         for row in publications]))}}
+             TD(row.name),
+             TD(row.nbo_id),
+             TD(row.obo_id),
+             TD(row.abo_id),
+             TD(row.generated_id))
+         for row in behavior_terms]))}}
