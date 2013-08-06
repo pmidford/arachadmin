@@ -25,10 +25,31 @@ def enter():
         response.false = 'errors in submission'
     return dict(form=form)
     
+## This needs a filter so rejected (or unreviewed) publications can be hidden and
+## ignored by the citation collision logic    
 def status_tool():
+    '''
+    Entry point to the publication status tools;
+    lists the current publications by citation and reports status
+    the view provides buttons to invoke check_update and update_dois
+    '''
     import publication_tools
     publications = db().select(db.publication.ALL, orderby=db.publication.id)
     result = []
     for publication in publications:
-       result.append(publication_tools.citation(publication))
+       issues = publication_tools.issues_list(publication)
+       result.append(publication_tools.make_citation(publication))
     return dict(report=result)
+
+def check_update():
+    '''
+    This tool will correct whatever problems can be resolved automatically, in particular:
+      - generating citations and updating db records (or deleting citations if they have become ambiguous)
+    '''
+    return
+    
+def update_dois():
+    '''
+    This tool will attempt to find dois, either by querying crossref directly or by walking the curator through the query process
+    '''
+    return
