@@ -28,6 +28,11 @@ db.define_table('publication_curation',
                 Field('status','string',writable=False,length=31),
                 format='%(status)s')
                 
+db.define_table('author',
+                Field('last_name','string',writable=False,length=63),
+                Field('first_name','string',writable=False,length=63),
+                format='%(last_name)s, %(first_name)s')
+                
 db.define_table('publication',
                 Field('publication_type','string',length=31),
                 Field('dispensation','string',length=31),
@@ -47,7 +52,13 @@ db.define_table('publication',
                 Field('doi','string'),
                 Field('generated_id','string',writable=False),
                 Field('curation_status','reference publication_curation',requires=IS_EMPTY_OR(IS_IN_DB(db,'publication_curation.id','%(status)s'))),
-                format = '%(author)s (%(publication_year)s)')
+                format = '%(author_list)s (%(publication_year)s)')
+                                
+db.define_table('authorship',
+                Field('publication','reference publication',requires=IS_IN_DB(db,'publication.id','%(author_list)s')),
+                Field('author','reference author',requires=IS_IN_DB(db,'author.id','%(last_name)s, %(first_name)s')),
+                Field('position','integer'),
+                format = '%(publication)s')
                                 
 db.define_table('taxon',
                 Field('name','string'),
