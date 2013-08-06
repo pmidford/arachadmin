@@ -24,3 +24,11 @@ def enter():
     elif form.errors:
         response.false = 'errors in submission'
     return dict(form=form)
+    
+def status_tool():
+    import publication_tools
+    publications = db().select(db.publication.ALL, orderby=db.publication.id)
+    result = []
+    for publication in publications:
+       result.append(publication_tools.citation(publication))
+    return dict(report=result)

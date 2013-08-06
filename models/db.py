@@ -24,6 +24,10 @@ else:
 
 db = DAL("mysql://%s:%s@%s/%s" % (user, password, host, dbname), migrate=True ) 
 
+db.define_table('publication_curation',
+                Field('status','string',writable=False,length=31),
+                format='%(status)s')
+                
 db.define_table('publication',
                 Field('publication_type','string',length=31),
                 Field('dispensation','string',length=31),
@@ -42,7 +46,8 @@ db.define_table('publication',
                 Field('publication_year','string'),
                 Field('doi','string'),
                 Field('generated_id','string',writable=False),
-                format='%(author_list)s %(publication_year)s')
+                Field('curation_status','reference publication_curation',requires=IS_EMPTY_OR(IS_IN_DB(db,'publication_curation.id','%(status)s'))),
+                format = '%(author)s (%(publication_year)s)')
                                 
 db.define_table('taxon',
                 Field('name','string'),
@@ -93,7 +98,9 @@ db.define_table('assertion',
                 Field('publication_taxon','string'),
                 Field('taxon','reference taxon',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id','%(name)s'))),
                 Field('publication_anatomy','string'),
-                Field('evidence','integer'))
+                Field('evidence','integer'),
+                Field('generated_id','string',writable=False),
+                format='[Assertion]%(generated_id)')
                 
                 
 db.define_table('behavior2assertion',

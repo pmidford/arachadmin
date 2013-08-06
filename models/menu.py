@@ -30,7 +30,12 @@ response.menu = [
         ('Assertions', False, URL('assertion','list',[])),
         ('Behavior Terms', False, URL('behavior_term','list',[])),
         ('Anatomy Terms', False, URL('anatomy_term','list'), [])
+    ]),
+    (T('Tools'), False, URL('default','index'),[
+        ('Publication Status Tool', False, URL('publication','status_tool', [])),
+        ('Assertion Status Tool', False, URL('assertion', 'status_tool', []))
     ])
+    
 ]
 
 DEVELOPMENT_MENU = True

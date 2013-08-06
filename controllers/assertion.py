@@ -23,3 +23,7 @@ def enter():
     elif form.errors:
         response.false = 'errors in submission'
     return dict(form=form)
+    
+def status_tool():
+    a = db.assertion
+    return
