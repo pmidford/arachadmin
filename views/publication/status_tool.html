@@ -7,8 +7,9 @@
 
 <h1>Publication Status Tool</h1>
 <ul>
-{{for citation in report:}}
-{{=LI(citation)}}
+{{for item in report:}}
+    {{pub,status = item}}
+    {{=LI("%s   %s" % (pub,str(status)))}}
 {{pass}}
 </ul>
 

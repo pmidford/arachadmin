@@ -1,15 +1,15 @@
 {{extend 'layout.html'}}
 <h1>List of publications</h1>
-{{headers=['id','type','dispensation','reviewed','downloaded','title','authors','publication','volume','issue','pages','date','year','doi']}}
+{{headers=['authors','id','type','dispensation','reviewed','downloaded','title','publication','volume','issue','pages','date','year','doi']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
-  TBODY(*[TR(TD(row.id),
+  TBODY(*[TR(TD(row.author_list),
+             TD(row.id),
              TD(row.publication_type),
              TD(row.dispensation),
              TD(row.downloaded),
              TD(row.reviewed),
              TD(row.title),
-             TD(row.author_list),
              TD(row.source_publication),
              TD(row.volume),
              TD(row.issue),

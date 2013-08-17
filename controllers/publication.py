@@ -5,7 +5,7 @@ def index():
     redirect(URL('list'))
 
 def list():
-    publications = db().select(db.publication.ALL, orderby=db.publication.id)
+    publications = db().select(db.publication.ALL, orderby=db.publication.author_list)
     return dict(publications=publications)
 
 def show():
@@ -38,8 +38,9 @@ def status_tool():
     result = []
     for publication in publications:
        issues = publication_tools.issues_list(publication)
-       result.append(publication_tools.make_citation(publication))
-    return dict(report=result)
+       pub_item = (publication_tools.make_citation(publication), issues)
+       result.append(pub_item)
+    return {"report": result}
 
 def check_update():
     '''

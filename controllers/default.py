@@ -1,18 +1,11 @@
 # -*- coding: utf-8 -*-
-# this file is released under public domain and you can use without limitations
+# modified portions of this file are released under the MIT License, web2py portions were previously assigned to the public domain
 
-#########################################################################
-## This is a samples controller
-## - index is the default action of any application
-## - user is required for authentication and authorization
-## - download is for downloading files uploaded in the db (does streaming)
-## - call exposes all registered services (none by default)
-#########################################################################
-
+# This controller is reponsible for the initial page shown when arachadmin starts up.
 
 def index():
     result = dict()
-    result['publications'] = db().select(db.publication.ALL, orderby=db.publication.id)
+    result['publications'] = db().select(db.publication.ALL, orderby=db.publication.author_list)
     result['assertions'] = db().select(db.assertion.ALL, orderby=db.assertion.id)
     result['taxa'] = db().select(db.taxon.ALL, orderby=db.taxon.id)
     #taxon_synonyms = db().select(db.taxon_synonym.ALL, orderby=db.taxon_synonym.id)
@@ -21,18 +14,18 @@ def index():
     return result
 
 def list_publications():
-    publications = db().select(db.publication.ALL, orderby=db.publication.id)
+    publications = db().select(db.publication.ALL, orderby=db.publication.author_list)
     return dict(publications=publications)
 
 def list_assertions():
     assertions = db().select(db.assertion.ALL, orderby=db.assertion.id)
     return dict(assertions=assertions)
-    
+
 def show():
     publication = db.publication(request.args(0,cast=int)) or redirect(URL('index'))
     form = SQLFORM(db.publication,publication)
     return dict(publication=publication)
-    
+
 def enter():
     publication = db.publication(request.args(0,cast=int)) or redirect(URL('index'))
     form = SQLFORM(db.publication,publication)
@@ -41,7 +34,7 @@ def enter():
     elif form.errors:
         response.false = 'errors in submission'
     return dict(form=form)
-     
+
 def user():
     """
     exposes:
