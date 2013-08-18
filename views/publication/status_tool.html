@@ -6,12 +6,13 @@
 {{pass}}
 
 <h1>Publication Status Tool</h1>
-<ul>
-{{for item in report:}}
-    {{pub,status = item}}
-    {{=LI("%s   %s" % (pub,str(status)))}}
-{{pass}}
-</ul>
+{{headers=['publication','status']}}
+{{=TABLE(
+  THEAD(TR(*[TH(header) for header in headers])),
+  TBODY(*[TR(TD(item[0]),
+             TD(SPAN(str(item[1]),_style="color:#CC0000; font-weight:bold")))
+    for item in report]))}}
+
 
 {{block left_sidebar}}
 {{=A(T("Check and Update"), _href=URL("arachadmin","publication","check_update"), _class="btn",

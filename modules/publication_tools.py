@@ -24,8 +24,14 @@ def make_citation(row):
         author = authors[0].strip()
         return "{0} et al. ({1})".format(author,row.publication_year)
         
-def issues_list(row):
+def issues_list(row,db):
     '''
     Looks for problems with a publication and returns a list of strings identifying these problems
     '''
-    return []
+    result = []
+    if not check_citation(row):
+       result.append("No Citation")
+    ct = db.publication_curation
+    if not (row.curation_status):
+        result.append("No Curation Status")
+    return result
