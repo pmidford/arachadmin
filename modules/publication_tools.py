@@ -24,14 +24,22 @@ def make_citation(row):
         author = authors[0].strip()
         return "{0} et al. ({1})".format(author,row.publication_year)
         
-def issues_list(row,db):
+def issues_list(pub,db):
     '''
     Looks for problems with a publication and returns a list of strings identifying these problems
     '''
     result = []
-    if not check_citation(row):
+    if not check_citation(pub):
        result.append("No Citation")
     ct = db.publication_curation
-    if not (row.curation_status):
-        result.append("No Curation Status")
+    if not (pub.curation_status):
+        rows = db(ct.status == pub.dispensation).select()
+        if rows:
+            status_id = rows[0].id
+            db(db.publication.id == pub.id).update(curation_status = status_id)
+        elif (pub.dispensation == 'Downloaded'):
+            status_id = db(ct.status == 'Have PDF').select()[0].id
+            db(db.publication.id == pub.id).update(curation_status = status_id)
+        else:    
+            result.append("Curation status %s could not be auto-updated" % pub.dispensation)
     return result
