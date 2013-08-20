@@ -34,7 +34,7 @@ def status_tool():
     the view provides buttons to invoke check_update and update_dois
     '''
     import publication_tools
-    publications = db().select(db.publication.ALL, orderby=db.publication.id)
+    publications = db().select(db.publication.ALL, orderby=db.publication.author_list)
     result = []
     for publication in publications:
        issues = publication_tools.issues_list(publication,db)
