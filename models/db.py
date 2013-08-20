@@ -52,6 +52,7 @@ db.define_table('publication',
                 Field('doi','string'),
                 Field('generated_id','string',writable=False),
                 Field('curation_status','reference publication_curation',requires=IS_EMPTY_OR(IS_IN_DB(db,'publication_curation.id','%(status)s'))),
+                Field('curation_update','datetime'),
                 format = '%(author_list)s (%(publication_year)s)')
                                 
 db.define_table('authorship',
@@ -131,6 +132,17 @@ db.define_table('participant2assertion',
                 Field('participantclass','reference taxon'),
                 Field('participantID','string'),
                 Field('assertion','reference assertion'))
+                                                
+db.define_table('ontology_source',
+                 Field('name','string'),
+                 Field('source_url','string'),
+                 Field('processing','reference ontology_processing',requires=IS_EMPTY_OR(IS_IN_DB(db,'ontology_processing.id','%(type_name)s'))),
+                 Field('last_update','datetime',writable=False),
+                 format='Ontology: %(name)')   
+                                                
+db.define_table('ontology_processing',
+                 Field('type_name','string'),
+                 format='Ontology processing: %(type_name)')          
                                                 
 #########################################################################
 ## Define your tables below (or better in another model file) for example
