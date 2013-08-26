@@ -7,3 +7,6 @@ def index():
     ontologies = db().select(db.ontology_source.ALL)
     result = [ontology.name for ontology in ontologies]
     return {"ontologies": result}
+    
+def check_modified():
+    redirect("index")

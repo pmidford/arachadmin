@@ -33,7 +33,8 @@ response.menu = [
     ]),
     (T('Tools'), False, URL('default','index'),[
         ('Publication Status Tool', False, URL('publication','status_tool', [])),
-        ('Assertion Status Tool', False, URL('assertion', 'status_tool', []))
+        ('Assertion Status Tool', False, URL('assertion', 'status_tool', [])),
+        ('Ontology Update Tool', False, URL('ontology','index',[]))
     ])
     
 ]

@@ -38,7 +38,8 @@ def status_tool():
     result = []
     for publication in publications:
        issues = publication_tools.issues_list(publication,db)
-       pub_item = (publication_tools.make_citation(publication), issues)
+       pub_item = (publication_tools.make_citation(publication), issues,
+                   publication.id)
        result.append(pub_item)
     return {"report": result}
 

@@ -9,7 +9,7 @@
 {{headers=['publication','status']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
-  TBODY(*[TR(TD(item[0]),
+  TBODY(*[TR(TD(A(item[0],_href=URL("enter", args=item[2]))),
              TD(SPAN(str(item[1]),_style="color:#CC0000; font-weight:bold")))
     for item in report]))}}
 
