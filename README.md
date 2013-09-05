@@ -15,8 +15,7 @@ All original code (not part of web2py) is copyright 2013 Peter E. Midford
 
 Currently the only prerequisite for arachadmin is lxml.  On ubuntu, you might be able to just use 'apt-get install -y python-pip'; otherwise use:
 
-<pre>
-</pre>
+TDB
 
 2. Install MySQL.
 
@@ -24,7 +23,11 @@ Currently the only prerequisite for arachadmin is lxml.  On ubuntu, you might be
 
 4. Download and install web2py.  The current version of arachadmin runs with version 2.5.1.
 
-5. Get the current backend dumpe from figshare.
+5. Get the current backend dump from figshare.
+
+6. Load the dump using: TBD
+
+
 
 ## Contact:
    Peter E. Midford
