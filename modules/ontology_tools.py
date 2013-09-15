@@ -21,6 +21,7 @@ RDFS_LABEL = RDFS_PREFIX + 'label'
 
 OWL_CLASS = OWL_PREFIX + 'Class'
 OWL_EQUIVALENTCLASS = OWL_PREFIX + 'equivalentClass'
+OWL_RESTRICTION = OWL_PREFIX + 'Restriction'
 
 
 class ClassTarget(object):
@@ -33,6 +34,7 @@ class ClassTarget(object):
         self.is_label = False
         self.has_parent = False
         self.is_equivalent_class = False
+        self.is_restriction = False
         self.is_class_comment = False
         if tag == OWL_CLASS:
             self.is_class = True
@@ -41,6 +43,8 @@ class ClassTarget(object):
                     self.containerclass = {'about': attrib[RDF_ABOUT]}
         elif tag == OWL_EQUIVALENTCLASS:
             self.is_equivalent_class = True
+        elif tag == OWL_RESTRICTION:
+            self.is_restriction = True
         elif self.containerclass:
             if tag.endswith('label'):
                 self.is_label = True
@@ -57,6 +61,8 @@ class ClassTarget(object):
                 self.is_class = False
         elif tag == OWL_EQUIVALENTCLASS:
             self.is_equivalent_class = False
+        elif tag == OWL_RESTRICTION:
+            self.is_restriction = False
         self.is_label = False
         self.has_parent = False
         self.is_class_comment = False
@@ -71,6 +77,14 @@ class ClassTarget(object):
             self.containerclass['class_comment'] = com + data
     def close(self):
         return self.class_list
+        
+def update_ontology(db, ont):
+    source_url = ont.source_url
+    if ont.processing == 1:  #check symbolically
+        ontology_source = urlopen(source_url)
+        parser = etree.XMLParser(target = ClassTarget())
+        results = etree.parse(ontology_source, parser)
+    return
 
 def pplist(terms):
     import pprint
@@ -123,4 +137,18 @@ def load_from_obo(ontology_name, processor):
     processor(results)
 
 def demo():
+    '''For testing the owl parser'''
     load_from_obo('ncbitaxon',build_ontology_tree)
+    
+def check_date(urlstr):
+    urlconn = urlopen(urlstr)
+    urlinfo = urlconn.info()
+    for header in urlinfo.headers:
+        if header.startswith('Last-Modified: '):
+            timestr = header[len('Last-Modified: '):len(header)]
+            print timestr
+            urlconn.close()
+            return timestr
+    else:        
+        urlconn.close()
+        return ''

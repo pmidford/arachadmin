@@ -6,10 +6,10 @@
 {{pass}}
 
 <h1>Ontology Cache Status Tool</h1>
-{{headers=['ontology','status']}}
+{{headers=['ontology','url','last update']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
-  TBODY(*[TR(TD(item))
+  TBODY(*[TR(TD(item.name),TD(item.source_url),TD(item.last_update))
     for item in ontologies]))}}
 
 

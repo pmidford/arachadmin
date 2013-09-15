@@ -76,6 +76,16 @@ db.define_table('taxon_synonym',
                 Field('year','string'),
                 Field('valid_name','reference taxon',ondelete='NO ACTION'), 
                 format='%(name) (synonym)')
+                
+db.define_table('added_taxon',
+                Field('name','string'),
+                Field('authority','reference taxonomy_authority',ondelete='NO ACTION'),
+                Field('identifier','string'),
+                format='%(name)s:%(identifier)s')
+                
+db.define_table('taxonomy_authority',
+                Field('name','string'),
+                format='%(name)s')
 
 db.define_table('anatomy_term',
                 Field('name','string'),
