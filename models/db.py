@@ -61,6 +61,27 @@ db.define_table('authorship',
                 Field('position','integer'),
                 format = '%(publication)s')
                                 
+db.define_table('authority',
+                Field('name','string'))
+                                
+db.define_table('domain',
+                Field('name','string'))                                                                         
+                                
+db.define_table('term',
+                Field('source_id','string'),
+                Field('authority','reference authority',ondelete='NO ACTION'),
+                Field('domain', 'reference domain',ondelete='NO ACTION'),
+                Field('label','string'),
+                Field('generated_id','string',writable=False))
+                                
+db.define_table('synonym',
+                Field('text','string'),
+                Field('term','reference term'))
+                  
+db.define_table('individual',
+                Field('source_id','string'),
+                Field('generated_id','string',writable=False))
+                  
 db.define_table('taxon',
                 Field('name','string'),
                 Field('ncbi_id','string'),
@@ -69,44 +90,10 @@ db.define_table('taxon',
                 Field('year','string'),
                 Field('generated_id','string',writable=False),
                 format='%(name)s')
-               
-db.define_table('taxon_synonym',
-                Field('name','string'),
-                Field('author','string'),
-                Field('year','string'),
-                Field('valid_name','reference taxon',ondelete='NO ACTION'), 
-                format='%(name) (synonym)')
-                
-db.define_table('added_taxon',
-                Field('name','string'),
-                Field('authority','reference taxonomy_authority',ondelete='NO ACTION'),
-                Field('identifier','string'),
-                format='%(name)s:%(identifier)s')
-                
+                               
 db.define_table('taxonomy_authority',
                 Field('name','string'),
                 format='%(name)s')
-
-db.define_table('anatomy_term',
-                Field('name','string'),
-                Field('spd_id','string'),
-                Field('obo_id','string'),
-                Field('generated_id','string',writable=False),
-                format='%(name)',
-                migrate=True)                
-
-db.define_table('behavior_term',
-                Field('name','string'),
-                Field('nbo_id','string'),
-                Field('obo_id','string'),
-                Field('abo_id','string'),
-                Field('generated_id','string',writable=False),
-                format='%(name)')                
-
-db.define_table('behavior_synonym',
-                Field('name','string'),
-                Field('primary_term',db.behavior_term,ondelete='NO ACTION',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id','%(name)s'))),
-                format='%(name) (synonym)')
 
 db.define_table('evidence_code',
                 Field('long_name','string'),
@@ -122,8 +109,11 @@ db.define_table('assertion',
                 Field('publication_anatomy','string'),
                 Field('evidence','integer'),
                 Field('generated_id','string',writable=False),
-                format='[Assertion]%(generated_id)')
+                format='Assertion: %(generated_id)')
                 
+db.define_table('assertion2term',
+                Field('assertion', 'reference assertion'),
+                Field('term','reference term'))
                 
 db.define_table('behavior2assertion',
                 Field('behavior','reference behavior_term'),
@@ -148,6 +138,7 @@ db.define_table('ontology_source',
                  Field('source_url','string'),
                  Field('processing','reference ontology_processing',requires=IS_EMPTY_OR(IS_IN_DB(db,'ontology_processing.id','%(type_name)s'))),
                  Field('last_update','datetime',writable=False),
+                 Field('authority', 'reference authority'),
                  format='Ontology: %(name)')   
                                                 
 db.define_table('ontology_processing',

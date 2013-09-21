@@ -9,8 +9,8 @@ def index():
     result['assertions'] = db().select(db.assertion.ALL, orderby=db.assertion.id)
     result['taxa'] = db().select(db.taxon.ALL, orderby=db.taxon.id)
     #taxon_synonyms = db().select(db.taxon_synonym.ALL, orderby=db.taxon_synonym.id)
-    result['behavior_terms'] = db().select(db.behavior_term.ALL, orderby=db.behavior_term.id)
-    result['anatomy_terms'] = db().select(db.anatomy_term.ALL, orderby=db.anatomy_term.id)
+    #result['behavior_terms'] = db().select(db.behavior_term.ALL, orderby=db.behavior_term.id)
+    #result['anatomy_terms'] = db().select(db.anatomy_term.ALL, orderby=db.anatomy_term.id)
     return result
 
 def list_publications():
