@@ -49,8 +49,9 @@ class ClassTarget(object):
             if tag.endswith('label'):
                 self.is_label = True
             elif tag.endswith('subClassOf'):
-                self.containerclass['parent'] = attrib[RDF_RESOURCE]
-                self.has_parent = True
+                if RDF_RESOURCE in attrib:
+                    self.containerclass['parent'] = attrib[RDF_RESOURCE]
+                    self.has_parent = True
             elif tag.endswith('IAO_0000115'):
                 self.is_class_comment = True
     def end(self, tag):
@@ -78,13 +79,22 @@ class ClassTarget(object):
     def close(self):
         return self.class_list
         
-def update_ontology(db, ont):
+def update_ontology(ont,type_name):
     source_url = ont.source_url
-    if ont.processing == 1:  #check symbolically
-        ontology_source = urlopen(source_url)
-        parser = etree.XMLParser(target = ClassTarget())
-        results = etree.parse(ontology_source, parser)
-    return
+    term_list = []
+    if type_name == 'NCBI taxonomy':  #check symbolically
+        term_list = load_from_url(source_url,build_ontology_tree,filter=ARACHNID_NODE)
+    elif type_name == 'OWL ontology':
+        term_list = load_from_url(source_url,simple_builder)
+    else:
+        print 'unknown type name'
+    return term_list
+
+def load_from_url(ont_url,processor,filter=None):
+    ontology_source=urlopen(ont_url)
+    parser = etree.XMLParser(target = ClassTarget())
+    results = etree.parse(ontology_source, parser)
+    return processor(results,filter)
 
 def pplist(terms):
     import pprint
@@ -99,7 +109,7 @@ def process_tree(ont_tree):
 
 ARACHNID_NODE = u'http://purl.obolibrary.org/obo/NCBITaxon_6854'
 
-def build_ontology_tree(terms):
+def build_ontology_tree(terms,filter=None):
     import pprint
     pp = pprint.PrettyPrinter(indent=2)
     roots = []
@@ -120,25 +130,28 @@ def build_ontology_tree(terms):
             else:
                 roots.append(term)
     final_dict = dict()
-    children = [tree_dict[ARACHNID_NODE]]
+    children = [tree_dict[filter]]
     while (children):
         child = children.pop(0)
         if 'about' in child:
-            final_dict[child['about']] = child
+            final_dict[child['about']] = tree_dict[child['about']]
+            #print "%s %s" % (final_dict[child['about']],tree_dict[child['about']])
         if child['about'] in parent_dict:
             newchildren = parent_dict[child['about']]
             children.extend(newchildren)
-    print "added %d children of arachnid node" % len(final_dict)
+    return final_dict
 
-def load_from_obo(ontology_name, processor):
-    ontology_source = urlopen(OBO_PURL_PREFIX+ontology_name+OWL_SUFFIX)
-    parser = etree.XMLParser(target = ClassTarget())
-    results = etree.parse(ontology_source, parser)
-    processor(results)
+def simple_builder(terms,filter=None):
+    return terms
 
+
+def load_from_obo(ontology_name, processor,filter=None):
+    load_from_url(OBO_PURL_PREFIX+ontology_name+OWL_SUFFIX,processor,filter)
+    
 def demo():
     '''For testing the owl parser'''
-    load_from_obo('ncbitaxon',build_ontology_tree)
+    load_from_obo('ncbitaxon',build_ontology_tree,filter=ARACHNID_NODE)
+    
     
 def check_date(urlstr):
     urlconn = urlopen(urlstr)
