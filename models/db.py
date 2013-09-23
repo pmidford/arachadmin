@@ -61,27 +61,32 @@ db.define_table('authorship',
                 Field('position','integer'),
                 format = '%(publication)s')
                                 
-db.define_table('authority',
-                Field('name','string'))
-                                
 db.define_table('domain',
-                Field('name','string'))                                                                         
-                                
+                Field('name','string'),
+                format = '%(name)s')
+                
+db.define_table('authority',
+                Field('name','string'),
+                Field('uri','string'),
+                Field('domain','reference domain',ondelete='NO ACTION'),
+                format = '%(name)s')
+                
 db.define_table('term',
                 Field('source_id','string'),
                 Field('authority','reference authority',ondelete='NO ACTION'),
                 Field('domain', 'reference domain',ondelete='NO ACTION'),
                 Field('label','string'),
-                Field('generated_id','string',writable=False))
-                                
+                Field('generated_id','string',writable=False),
+                format = '%(label)s')
+                
 db.define_table('synonym',
-                Field('text','string'),
-                Field('term','reference term'))
-                  
+		        Field('text','string'),
+		        Field('term','reference term'))
+		      
 db.define_table('individual',
                 Field('source_id','string'),
                 Field('generated_id','string',writable=False))
-                  
+       
 db.define_table('taxon',
                 Field('name','string'),
                 Field('ncbi_id','string'),
@@ -109,7 +114,7 @@ db.define_table('assertion',
                 Field('publication_anatomy','string'),
                 Field('evidence','integer'),
                 Field('generated_id','string',writable=False),
-                format='Assertion: %(generated_id)')
+                format='Assertion: %(generated_id)s')
                 
 db.define_table('assertion2term',
                 Field('assertion', 'reference assertion'),
@@ -139,6 +144,7 @@ db.define_table('ontology_source',
                  Field('processing','reference ontology_processing',requires=IS_EMPTY_OR(IS_IN_DB(db,'ontology_processing.id','%(type_name)s'))),
                  Field('last_update','datetime',writable=False),
                  Field('authority', 'reference authority'),
+                 Field('domain', 'reference domain',ondelete='NO ACTION'),
                  format='Ontology: %(name)')   
                                                 
 db.define_table('ontology_processing',

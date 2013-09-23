@@ -18,10 +18,10 @@ def check_modified():
         if (old_date is None) or (date > old_date):
            print "Need to update %s, date is %s" % (ont.name,str(date))
            type_name = db.ontology_processing[ont.processing].type_name
+           ont_domain = ont.domain
            terms = update_ontology(ont,type_name)
            updateCount = 0
            for term in terms:
-               #print "term is %s; type is %s " % (term,type(term))
                t = None
                new_id = -1
                if isinstance(term,unicode):
@@ -34,5 +34,6 @@ def check_modified():
                    updateCount = updateCount + 1;
                    if 'label' in t:
                       db(db.term.id==new_id).update(label=t['label'])
+                   db(db.term.id==new_id).update(domain=ont.domain)
            print "loaded %d terms from %s" % (updateCount,ont.name)
     redirect('index')

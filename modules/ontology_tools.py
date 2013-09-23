@@ -12,6 +12,7 @@ RDFS_PREFIX = "{http://www.w3.org/2000/01/rdf-schema#}"
 OWL_PREFIX = "{http://www.w3.org/2002/07/owl#}"
 OBO_PURL_PREFIX = "http://purl.obolibrary.org/obo/"
 
+IAO_PREFIX = "http://purl.obolibrary.org/obo/"
 OWL_SUFFIX = ".owl"
 
 RDF_RESOURCE = RDF_PREFIX + 'resource'
@@ -22,7 +23,8 @@ RDFS_LABEL = RDFS_PREFIX + 'label'
 OWL_CLASS = OWL_PREFIX + 'Class'
 OWL_EQUIVALENTCLASS = OWL_PREFIX + 'equivalentClass'
 OWL_RESTRICTION = OWL_PREFIX + 'Restriction'
-
+OWL_SUBCLASS_OF = RDFS_PREFIX + 'subClassOf'
+IAO_ANNOTATION = IAO_PREFIX + 'IAO_0000115'
 
 class ClassTarget(object):
     def __init__(self):
@@ -48,11 +50,11 @@ class ClassTarget(object):
         elif self.containerclass:
             if tag.endswith('label'):
                 self.is_label = True
-            elif tag.endswith('subClassOf'):
+            elif tag == OWL_SUBCLASS_OF:
                 if RDF_RESOURCE in attrib:
                     self.containerclass['parent'] = attrib[RDF_RESOURCE]
                     self.has_parent = True
-            elif tag.endswith('IAO_0000115'):
+            elif tag == IAO_ANNOTATION:
                 self.is_class_comment = True
     def end(self, tag):
         if tag == OWL_CLASS:
