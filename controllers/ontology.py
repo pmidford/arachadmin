@@ -33,7 +33,9 @@ def check_modified():
                    row = db.term[new_id]
                    updateCount = updateCount + 1;
                    if 'label' in t:
-                      db(db.term.id==new_id).update(label=t['label'])
+                       db(db.term.id==new_id).update(label=t['label'])
+                   if 'class_comment' in t:
+                       db(db.term.id==new_id).update(comment=t['class_comment'])
                    db(db.term.id==new_id).update(domain=ont.domain)
            print "loaded %d terms from %s" % (updateCount,ont.name)
     redirect('index')

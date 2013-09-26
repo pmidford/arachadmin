@@ -77,6 +77,7 @@ db.define_table('term',
                 Field('domain', 'reference domain',ondelete='NO ACTION'),
                 Field('label','string'),
                 Field('generated_id','string',writable=False),
+                Field('comment','string'),
                 format = '%(label)s')
                 
 db.define_table('synonym',

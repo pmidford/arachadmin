@@ -10,9 +10,8 @@ from lxml import etree
 RDF_PREFIX = "{http://www.w3.org/1999/02/22-rdf-syntax-ns#}"
 RDFS_PREFIX = "{http://www.w3.org/2000/01/rdf-schema#}"
 OWL_PREFIX = "{http://www.w3.org/2002/07/owl#}"
-OBO_PURL_PREFIX = "http://purl.obolibrary.org/obo/"
+OBO_PURL_PREFIX = "{http://purl.obolibrary.org/obo/}"
 
-IAO_PREFIX = "http://purl.obolibrary.org/obo/"
 OWL_SUFFIX = ".owl"
 
 RDF_RESOURCE = RDF_PREFIX + 'resource'
@@ -24,7 +23,7 @@ OWL_CLASS = OWL_PREFIX + 'Class'
 OWL_EQUIVALENTCLASS = OWL_PREFIX + 'equivalentClass'
 OWL_RESTRICTION = OWL_PREFIX + 'Restriction'
 OWL_SUBCLASS_OF = RDFS_PREFIX + 'subClassOf'
-IAO_ANNOTATION = IAO_PREFIX + 'IAO_0000115'
+IAO_ANNOTATION = OBO_PURL_PREFIX + 'IAO_0000115'
 
 class ClassTarget(object):
     def __init__(self):
@@ -78,6 +77,7 @@ class ClassTarget(object):
             if 'class_comment' in self.containerclass:
                 com = self.containerclass['class_comment']
             self.containerclass['class_comment'] = com + data
+            print "comment is %s" % self.containerclass['class_comment']
     def close(self):
         return self.class_list
         
