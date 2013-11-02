@@ -31,7 +31,7 @@ db.define_table('publication_curation',
 db.define_table('author',
                 Field('last_name','string',writable=False,length=63),
                 Field('first_name','string',writable=False,length=63),
-                format='%(last_name)s, %(first_name)s')
+                format='%(last_name)s')
                 
 db.define_table('publication',
                 Field('publication_type','string',length=31),
@@ -79,6 +79,10 @@ db.define_table('term',
                 Field('generated_id','string',writable=False),
                 Field('comment','string'),
                 format = '%(label)s')
+
+behavior_domain = db(db.term.domain==1)
+anatomy_domain = db(db.term.domain==2)  #need to fix this
+taxon_domain = db(db.term.domain ==3)
                 
 db.define_table('synonym',
 		        Field('text','string'),
@@ -105,25 +109,33 @@ db.define_table('evidence_code',
                 Field('long_name','string'),
                 Field('obo_id','string'),
                 Field('code','string'))
+                
+db.define_table('participant',
+                Field('taxon','reference term'),
+                Field('substrate','reference term',requires=IS_EMPTY_OR(IS_IN_DB(db,'term.id','%(label)s'))),
+                Field('quantification','string',length=8),
+                Field('label','string'),
+                Field('generated_id','string',writable=False))
+db.participant.taxon.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,'term.id','%(label)s'))
+db.participant.substrate.requires = IS_EMPTY_OR(IS_IN_DB(anatomy_domain,'term.id','%(label)s'))
 
 db.define_table('assertion',
                 Field('publication',db.publication),
                 Field('publication_behavior','string'),
-                Field('behavior_term','integer'),
+                Field('behavior_term','reference term'),
                 Field('publication_taxon','string'),
                 Field('taxon','reference taxon',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id','%(name)s'))),
+                Field('primary_participant','reference participant',requires=IS_EMPTY_OR(IS_IN_DB(db,'participant.id','%(label)s'))),
                 Field('publication_anatomy','string'),
-                Field('evidence','integer'),
+                Field('evidence','reference evidence_code'),
                 Field('generated_id','string',writable=False),
                 format='Assertion: %(generated_id)s')
-                
+db.assertion.behavior_term.requires = IS_EMPTY_OR(IS_IN_DB(behavior_domain,'term.id','%(label)s'))
+                                
 db.define_table('assertion2term',
                 Field('assertion', 'reference assertion'),
                 Field('term','reference term'))
                 
-db.define_table('behavior2assertion',
-                Field('behavior','reference behavior_term'),
-                Field('assertion','reference assertion'))
 
 db.define_table('anatomy2assertion',
                 Field('anatomy_term','reference anatomy_term'),
