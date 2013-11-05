@@ -49,14 +49,14 @@ class ClassTarget(object):
         if tag == OWL_CLASS:
             self.is_class = True
             if attrib:
-                if attrib[RDF_ABOUT]:
+                if RDF_ABOUT in attrib:
                     self.containerclass = {'about': attrib[RDF_ABOUT]}
         elif tag == OWL_EQUIVALENTCLASS:
             self.is_equivalent_class = True
         elif tag == OWL_RESTRICTION:
             self.is_restriction = True
         elif self.containerclass:
-            if tag.endswith('label'):
+            if tag == RDFS_LABEL:
                 self.is_label = True
             elif tag == OWL_SUBCLASS_OF:
                 if RDF_RESOURCE in attrib:
@@ -79,13 +79,16 @@ class ClassTarget(object):
         self.is_class_comment = False
         pass
     def data(self, data):
-        if self.is_label and self.containerclass:
-            self.containerclass['label'] = data
-        elif self.is_class_comment and self.containerclass:
-            com = ''
-            if 'class_comment' in self.containerclass:
-                com = self.containerclass['class_comment']
-            self.containerclass['class_comment'] = com + data
+        if self.containerclass:
+            if self.is_label:
+                self.mergedata('label',data)
+            elif self.is_class_comment:
+                self.mergedata('class_comment',data)
+    def mergedata(self,tag,data):
+        if tag in self.containerclass:
+            self.containerclass[tag] = self.containerclass[tag] + data
+        else:
+            self.containerclass[tag] = data
     def close(self):
         return self.class_list
         
@@ -94,29 +97,30 @@ def update_ontology(ont,type_name):
     builds term list from the specified ontology source
     ont - row from ontology_source table
     type_name - controlls processing - if NCBI taxonomy, this will
-    filter terms subsumed by a particular node (e.g., all arachnids)
+    only include terms subsumed by a particular node (e.g., all arachnids)
+    filter terms based on labels (e.g., remove samples w/o possible behavior)
     """
     source_url = ont.source_url
     term_list = []
     if type_name == 'NCBI taxonomy':  #check symbolically
-        term_list = load_from_url(source_url,build_ontology_tree,filter=ARACHNID_NODE)
+        term_list = load_from_url(source_url,build_ontology_tree,root=ARACHNID_NODE)
     elif type_name == 'OWL ontology':
         term_list = load_from_url(source_url,simple_builder)
     else:
         print 'unknown type name'
     return term_list
 
-def load_from_url(ont_url,processor,filter=None):
+def load_from_url(ont_url,processor,root=None):
     """
     opens the url, parses the stream, then postprocesses (e.g., taxonomy filtering)
     ont_url - location of ontology text
     processor - function to pass over the list of terms returned by the parser
-    filter - argument for processors (e.g., root for taxonomic clade to use)
+    root - argument for processors (e.g., root for taxonomic clade to use)
     """
     ontology_source=urlopen(ont_url)
     parser = etree.XMLParser(target = ClassTarget())
     results = etree.parse(ontology_source, parser)
-    return processor(results,filter)
+    return processor(results,root)
 
 def pplist(terms):
     """ debugging parser output"""
@@ -133,11 +137,11 @@ def process_tree(ont_tree):
 
 ARACHNID_NODE = u'http://purl.obolibrary.org/obo/NCBITaxon_6854'
 
-def build_ontology_tree(terms,filter=None):
+def build_ontology_tree(terms,root=None,label_filter=None):
     """
     postprocess tree returned from parsing taxonomic ontology
     terms - list of terms from parser
-    filter-  root of clade to save - everything else ignored
+    root -  root of clade to save - everything else ignored
     Note: this currently returns dictionary of uri:term, rather than
     a simple list of terms.  Ought to fix to match the list of terms that
     comes in.
@@ -148,7 +152,7 @@ def build_ontology_tree(terms,filter=None):
     tree_dict = dict()
     parent_dict = dict()
     for term in terms:
-        if term:
+        if term_filter(term,label_filter):
             if 'about' in term:
                 tree_dict[term['about']] = term
             if 'parent' in term:
@@ -162,7 +166,7 @@ def build_ontology_tree(terms,filter=None):
             else:
                 roots.append(term)
     final_dict = dict()
-    children = [tree_dict[filter]]
+    children = [tree_dict[root]]
     while (children):
         child = children.pop(0)
         if 'about' in child:
@@ -172,16 +176,28 @@ def build_ontology_tree(terms,filter=None):
             children.extend(newchildren)
     return final_dict
 
-def simple_builder(terms,filter=None):
+def simple_builder(terms,root=None):
     return terms
 
-
-def load_from_obo(ontology_name, processor,filter=None):
-    load_from_url(OBO_PURL_PREFIX+ontology_name+OWL_SUFFIX,processor,filter)
+def term_filter(term,filter):
+    if term:
+        if filter:
+            return filter(term)
+        else:
+            return True
+    else:
+        return False
+            
+def simple_label_filter(term):
+    """ will reject labels suggesting sample identifiers from NCBI; returns boolean"""
+    return True
+    
+def load_from_obo(ontology_name, processor,root=None):
+    load_from_url(OBO_PURL_PREFIX+ontology_name+OWL_SUFFIX,processor,root)
     
 def demo():
     '''For testing the owl parser'''
-    load_from_obo('ncbitaxon',build_ontology_tree,filter=ARACHNID_NODE)
+    load_from_obo('ncbitaxon',build_ontology_tree,root=ARACHNID_NODE)
     
     
 def check_date(urlstr):
@@ -193,7 +209,6 @@ def check_date(urlstr):
     for header in urlinfo.headers:
         if header.startswith('Last-Modified: '):
             timestr = header[len('Last-Modified: '):len(header)]
-            print timestr
             urlconn.close()
             return timestr
     else:        

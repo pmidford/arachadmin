@@ -25,7 +25,10 @@ def check_modified():
     ontologies = db().select(db.ontology_source.ALL)
     for ont in ontologies:
         source_update = check_date(ont.source_url)
-        source_update_struct = time.strptime(source_update.rstrip(),UPDATE_FORMAT)
+        if source_update != '':
+            source_update_struct = time.strptime(source_update.rstrip(),UPDATE_FORMAT)
+        else:
+            source_update_struct = None
         if source_update_struct:
             source_update_secs = time.mktime(source_update_struct)
         else:
@@ -39,8 +42,8 @@ def check_modified():
             old_date_secs = time.mktime(old_date_struct)
         else:
             old_date_secs = None
-        if source_update_secs:
-            if (old_date_secs is None) or (source_update_secs > old_date_secs):
+        if source_update_secs or True:  #remove True in this line and next after testing
+            if (old_date_secs is None) or (source_update_secs > old_date_secs) or True:
                 print "Need to update %s, date is %s" % (ont.name,str(old_date))
                 type_name = db.ontology_processing[ont.processing].type_name
                 ont_domain = ont.domain
