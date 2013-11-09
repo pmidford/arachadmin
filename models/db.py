@@ -79,10 +79,14 @@ db.define_table('term',
                 Field('generated_id','string',writable=False),
                 Field('comment','string'),
                 format = '%(label)s')
-
-behavior_domain = db(db.term.domain==1)
-anatomy_domain = db(db.term.domain==2)  #need to fix this
-taxon_domain = db(db.term.domain ==3)
+behavior_domain_id = db(db.domain.name == 'behavior').select().first().id
+behavior_domain = db(db.term.domain == behavior_domain_id)
+anatomy_domain_id = db(db.domain.name == 'anatomy').select().first().id
+anatomy_domain = db(db.term.domain==anatomy_domain_id)  #need to fix this
+taxonomy_domain_id = db(db.domain.name == 'taxonomy').select().first().id
+taxon_domain = db(db.term.domain == taxonomy_domain_id)
+evidence_domain_id = db(db.domain.name == 'evidence').select().first().id
+evidence_domain = db(db.term.domain == evidence_domain_id)
                 
 db.define_table('synonym',
 		        Field('text','string'),
@@ -112,11 +116,14 @@ db.define_table('evidence_code',
                 
 db.define_table('participant',
                 Field('taxon','reference term'),
+                Field('anatomy','reference term'),
                 Field('substrate','reference term',requires=IS_EMPTY_OR(IS_IN_DB(db,'term.id','%(label)s'))),
                 Field('quantification','string',length=8),
                 Field('label','string'),
+                Field('publication_taxon','string'),
                 Field('generated_id','string',writable=False))
 db.participant.taxon.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,'term.id','%(label)s'))
+db.participant.anatomy.requires = IS_EMPTY_OR(IS_IN_DB(anatomy_domain,'term.id','%(label)s'))
 db.participant.substrate.requires = IS_EMPTY_OR(IS_IN_DB(anatomy_domain,'term.id','%(label)s'))
 
 db.define_table('assertion',

@@ -25,6 +25,26 @@ OWL_RESTRICTION = OWL_PREFIX + 'Restriction'
 OWL_SUBCLASS_OF = RDFS_PREFIX + 'subClassOf'
 IAO_ANNOTATION = OBO_PURL_PREFIX + 'IAO_0000115'
 
+_CONF_OBJ_DICT = {}
+
+def get_conf(request,domain):
+    """ 
+    Lifted from phylografter's externalproc.py (so presumibly originally
+    from Mark Holder), this manages configuration for ontology parsing.
+    This allows definition of domain specific parsing and filtering rules
+    (once fully implemented)
+    """
+    global _CONF_OBJ_DICT
+    app_name = request.application
+    c = _CONF_OBJ_DICT.get(app_name)
+    if c is None:
+        from ConfigParser import SafeConfigParser
+        c = SafeConfigParser({})
+        c.read("applications/%s/private/localconfig" % request.application)
+        _CONF_OBJ_DICT[app_name] = c
+    return c
+
+
 class ClassTarget(object):
     """
     receives notifications from the lxml 'etree' target (SAX-like) parser
@@ -165,16 +185,19 @@ def build_ontology_tree(terms,root=None,label_filter=None):
                    parent_dict[tp] = [term]
             else:
                 roots.append(term)
-    final_dict = dict()
+    final_list = []
     children = [tree_dict[root]]
     while (children):
         child = children.pop(0)
-        if 'about' in child:
-            final_dict[child['about']] = tree_dict[child['about']]
-        if child['about'] in parent_dict:
-            newchildren = parent_dict[child['about']]
-            children.extend(newchildren)
-    return final_dict
+        if 'label' in child:
+            clabel = child['label']
+            if not clabel.startswith('unclassified'):
+                if 'about' in child:
+                    final_list.append(tree_dict[child['about']])
+                if child['about'] in parent_dict:
+                    newchildren = parent_dict[child['about']]
+                    children.extend(newchildren)
+    return final_list
 
 def simple_builder(terms,root=None):
     return terms
