@@ -20,11 +20,13 @@ def show():
 def enter():
     if request.args(0):
         assertion = db.assertion(request.args(0,cast=int))
+        link_table = db(db.participant2assertion.assertion==assertion.id).select(db.participant2assertion.ALL)
         main_form = SQLFORM(db.assertion,assertion)
         participant_form = SQLFORM(db.participant)
     else:
         main_form = SQLFORM(db.assertion)
         participant_form = SQLFORM(db.participant)
+        link_table = None
     if main_form.process().accepted:
         response.flash = 'assertion table modified'
     elif main_form.errors:
@@ -33,7 +35,7 @@ def enter():
         response.flash = 'participant table modified'
     elif participant_form.errors:
         response.flash = 'errors in participant submission'
-    return dict(main_form=main_form,participant_form=participant_form)
+    return dict(main_form=main_form,participant_form=participant_form,link_table=link_table)
     
 def test():
 

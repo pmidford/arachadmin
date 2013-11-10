@@ -1,4 +1,18 @@
 {{extend 'layout.html'}}
 <h1>Enter/edit record for an assertion</h1>
-{{=main_form}}
-{{=participant_form}}
+<DIV class="row">
+   <DIV class="span6">
+      {{=main_form}}
+   </DIV>
+   <DIV class="span6">
+      {{=participant_form}}
+      {{headers=['assertion','participant','index']}}
+      {{=TABLE(
+  THEAD(TR(*[TH(header) for header in headers])),
+  TBODY(*[TR(TD(row.assertion),
+             TD(row.participant),
+             TD(row.participant_index))
+         for row in link_table]))}}
+
+   </DIV>
+</DIV>

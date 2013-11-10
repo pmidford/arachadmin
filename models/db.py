@@ -154,9 +154,9 @@ db.define_table('actor2assertion',
     
                             
 db.define_table('participant2assertion',
-                Field('participantclass','reference taxon'),
-                Field('participantID','string'),
-                Field('assertion','reference assertion'))
+                Field('assertion','reference assertion'),
+                Field('participant', 'reference participant'),
+                Field('participant_index','integer',unique=True))                                
                                                 
 db.define_table('ontology_source',
                  Field('name','string'),
