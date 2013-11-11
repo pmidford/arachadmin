@@ -114,6 +114,22 @@ db.define_table('evidence_code',
                 Field('obo_id','string'),
                 Field('code','string'))
                 
+def render_participant(r):
+    if r.label:
+        return r.label
+    if r.quantification == 'some':
+        quan = 'some'
+    else:
+        quan = ''
+    if r.anatomy and r.taxon:
+       head = "%s of %s" % (db.term(r.anatomy).label,db.term(r.taxon).label)
+    elif r.taxon:
+       head = str(db.term(r.taxon).label)
+    else:
+       head = str(db.term(r.substrate).label)
+    return "foo: %s %s" % (quan,head)
+                       
+                                
 db.define_table('participant',
                 Field('taxon','reference term'),
                 Field('anatomy','reference term'),
@@ -122,6 +138,7 @@ db.define_table('participant',
                 Field('label','string'),
                 Field('publication_taxon','string'),
                 Field('generated_id','string',writable=False))
+
 db.participant.taxon.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,'term.id','%(label)s'))
 db.participant.anatomy.requires = IS_EMPTY_OR(IS_IN_DB(anatomy_domain,'term.id','%(label)s'))
 db.participant.substrate.requires = IS_EMPTY_OR(IS_IN_DB(anatomy_domain,'term.id','%(label)s'))
@@ -132,7 +149,7 @@ db.define_table('assertion',
                 Field('behavior_term','reference term'),
                 Field('publication_taxon','string'),
                 Field('taxon','reference taxon',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id','%(name)s'))),
-                Field('primary_participant','reference participant',requires=IS_EMPTY_OR(IS_IN_DB(db,'participant.id','%(label)s'))),
+                Field('primary_participant','reference participant',requires=IS_EMPTY_OR(IS_IN_DB(db,'participant.id',render_participant))),
                 Field('publication_anatomy','string'),
                 Field('evidence','reference evidence_code'),
                 Field('generated_id','string',writable=False),
@@ -156,7 +173,7 @@ db.define_table('actor2assertion',
 db.define_table('participant2assertion',
                 Field('assertion','reference assertion'),
                 Field('participant', 'reference participant'),
-                Field('participant_index','integer',unique=True))                                
+                Field('participant_index', 'integer'))
                                                 
 db.define_table('ontology_source',
                  Field('name','string'),
