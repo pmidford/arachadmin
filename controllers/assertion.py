@@ -21,29 +21,29 @@ def enter():
     if request.args(0) and request.args(1):
         assertion = db.assertion(request.args(0,cast=int))
         participant = db.participant(request.args(1,case=int))
-        link_table = db(db.participant2assertion.assertion==assertion.id).select(db.participant2assertion.ALL)
+        link_table = make_link_table(assertion)
         main_form = SQLFORM(db.assertion,assertion)
         participant_form = SQLFORM(db.participant,participant)
     elif request.vars['assertion'] and request.vars['participant']:
         assertion = db.assertion(int(request.vars['assertion']))
         participant = db.participant(int(request.vars['participant']))
-        link_table = db(db.participant2assertion.assertion==assertion.id).select(db.participant2assertion.ALL)
+        link_table = make_link_table(assertion)
         main_form = SQLFORM(db.assertion,assertion)
         participant_form = SQLFORM(db.participant,participant)    
     elif request.args(0):
         assertion = db.assertion(request.args(0,cast=int))
-        link_table = db(db.participant2assertion.assertion==assertion.id).select(db.participant2assertion.ALL)
+        link_table = make_link_table(assertion)
         main_form = SQLFORM(db.assertion,assertion)
         participant_form = SQLFORM(db.participant)
     elif request.vars['assertion']:
         assertion = db.assertion(int(request.vars['assertion']))
-        link_table = db(db.participant2assertion.assertion==assertion.id).select(db.participant2assertion.ALL)
+        link_table = make_link_table(assertion)
         main_form = SQLFORM(db.assertion,assertion)
         participant_form = SQLFORM(db.participant)
     else:
         main_form = SQLFORM(db.assertion)
         participant_form = SQLFORM(db.participant)
-        link_table = None
+        link_table = []
     if main_form.process().accepted:
         assertion = main_form.vars.id
         response.flash = 'assertion table modified'
@@ -51,13 +51,31 @@ def enter():
         response.flash = 'errors in assertion submission'
     if participant_form.process().accepted:
         if assertion:
-            db.participant2assertion.insert(assertion=assertion,participant=participant_form.vars.id,participant_index=1)
-            response.flash = 'participant table modified'
+            participant_id = participant_form.vars.id
+            existing_links = db((db.participant2assertion.assertion==assertion.id) & 
+                                (db.participant2assertion.participant==participant_id))
+            other_links = db(db.participant2assertion.assertion==assertion)
+            if existing_links:
+                pass
+            elif other_links:
+                db.participant2assertion.insert(assertion=assertion,
+                                                participant=participant_id,
+                                                participant_index=length(other_links)+1)
+                response.flash = 'participant table modified'
+            else:
+                db.participant2assertion.insert(assertion=assertion,
+                                                participant=participant_id,
+                                                participant_index=1)
+                response.flash = 'participant table modified'
         else:
             response.flash = 'error: no assertion to link participant to'
     elif participant_form.errors:
         response.flash = 'errors in participant submission'
     return dict(main_form=main_form,participant_form=participant_form,link_table=link_table)
+    
+def make_link_table(assertion):
+    return db(db.participant2assertion.assertion==assertion.id).select(db.participant2assertion.ALL)
+        
     
 def test():
 
