@@ -112,11 +112,13 @@ class ClassTarget(object):
     def close(self):
         return self.class_list
         
+ARACHNID_NODE = u'http://purl.obolibrary.org/obo/NCBITaxon_6854'
+
 def update_ontology(ont,type_name):
     """
     builds term list from the specified ontology source
     ont - row from ontology_source table
-    type_name - controlls processing - if NCBI taxonomy, this will
+    type_name - controls processing - if NCBI taxonomy, this will
     only include terms subsumed by a particular node (e.g., all arachnids)
     filter terms based on labels (e.g., remove samples w/o possible behavior)
     """
@@ -155,8 +157,6 @@ def process_tree(ont_tree):
         print child.tag
     return ont_tree
 
-ARACHNID_NODE = u'http://purl.obolibrary.org/obo/NCBITaxon_6854'
-
 def build_ontology_tree(terms,root=None,label_filter=None):
     """
     postprocess tree returned from parsing taxonomic ontology
@@ -178,9 +178,7 @@ def build_ontology_tree(terms,root=None,label_filter=None):
             if 'parent' in term:
                 tp = term['parent']
                 if tp in parent_dict and parent_dict[tp] != None:
-                   t1 = parent_dict[tp]
-                   t1.append(term)
-                   parent_dict[tp] = t1
+                   parent_dict[tp].append(term)
                 else:
                    parent_dict[tp] = [term]
             else:
