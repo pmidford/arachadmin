@@ -127,17 +127,20 @@ def render_participant(r):
        head = str(db.term(r.taxon).label)
     else:
        head = str(db.term(r.substrate).label)
-    return "foo: %s %s" % (quan,head)
+    return "%s %s" % (quan,head)
                        
                                 
 db.define_table('participant',
                 Field('taxon','reference term'),
                 Field('anatomy','reference term'),
                 Field('substrate','reference term',requires=IS_EMPTY_OR(IS_IN_DB(db,'term.id','%(label)s'))),
-                Field('quantification','string',length=8),
+                Field('quantification','string',length=16,requires=IS_NULL_OR(IS_IN_SET(["some","individual"]))),
                 Field('label','string'),
                 Field('publication_taxon','string'),
-                Field('generated_id','string',writable=False))
+                Field('publication_anatomy','string'),
+                Field('publication_substrate','string'),
+                Field('generated_id','string',writable=False),
+                format = render_participant)
 
 db.participant.taxon.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,'term.id','%(label)s'))
 db.participant.anatomy.requires = IS_EMPTY_OR(IS_IN_DB(anatomy_domain,'term.id','%(label)s'))

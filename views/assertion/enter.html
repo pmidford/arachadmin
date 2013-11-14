@@ -2,16 +2,19 @@
 <h1>Enter/edit record for an assertion</h1>
 <DIV class="row">
    <DIV class="span6">
+       <h3>Assertion form</h3>
       {{=main_form}}
    </DIV>
    <DIV class="span6">
+       <h3>Participant form</h3>
       {{=participant_form}}
+       <h3>Table of associated participants</h3>
       {{headers=['assertion','participant','index']}}
       {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
-  TBODY(*[TR(TD(row.assertion),
-             TD(row.participant),
-             TD(row.participant_index))
+  TBODY(*[TR(TD(row['assertion']),
+             TD(row['participant']),
+             TD(row['index']))
          for row in link_table]))}}
 
    </DIV>

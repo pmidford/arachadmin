@@ -2,11 +2,11 @@
 # try something like
 def index():
     """
-    Entry point to the ontology update tools;
+    Entry point to the assertion entry tools;
     """
     assertions = db().select(db.ontology_source.ALL, orderby=db.assertion.id)
     result = [assertion for assertion in assertions]
-    return {"ontologies": result}
+    return {"assertions": result}
     
 def list():
     assertions = db().select(db.assertion.ALL, orderby=db.assertion.id)
@@ -53,19 +53,22 @@ def enter():
         if assertion:
             participant_id = participant_form.vars.id
             existing_links = db((db.participant2assertion.assertion==assertion.id) & 
-                                (db.participant2assertion.participant==participant_id))
-            other_links = db(db.participant2assertion.assertion==assertion)
+                                (db.participant2assertion.participant==participant_id)).select()
+            other_links = db(db.participant2assertion.assertion==assertion).select()
             if existing_links:
+                response.flash = 'participant table unchanged'
                 pass
             elif other_links:
                 db.participant2assertion.insert(assertion=assertion,
                                                 participant=participant_id,
-                                                participant_index=length(other_links)+1)
+                                                participant_index=len(other_links)+1)
+                link_table = make_link_table(assertion)
                 response.flash = 'participant table modified'
             else:
                 db.participant2assertion.insert(assertion=assertion,
                                                 participant=participant_id,
                                                 participant_index=1)
+                link_table = make_link_table(assertion)
                 response.flash = 'participant table modified'
         else:
             response.flash = 'error: no assertion to link participant to'
@@ -74,7 +77,15 @@ def enter():
     return dict(main_form=main_form,participant_form=participant_form,link_table=link_table)
     
 def make_link_table(assertion):
-    return db(db.participant2assertion.assertion==assertion.id).select(db.participant2assertion.ALL)
+    rows = db(db.participant2assertion.assertion==assertion.id).select()
+    result = []
+    for row in rows:
+        item = {}
+        item['assertion'] = row.assertion
+        item['index'] = row.participant_index
+        item['participant'] = render_participant(db.participant(row.participant))
+        result.append(item)
+    return result
         
     
 def test():
