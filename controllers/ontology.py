@@ -42,8 +42,8 @@ def check_modified():
             old_date_secs = time.mktime(old_date_struct)
         else:
             old_date_secs = None
-        if source_update_secs or True:  #remove True in this line and next after testing
-            if (old_date_secs is None) or (source_update_secs > old_date_secs) or True:
+        if source_update_secs:
+            if (old_date_secs is None) or (source_update_secs > old_date_secs):
                 print "Need to update %s, date is %s" % (ont.name,str(old_date))
                 type_name = db.ontology_processing[ont.processing].type_name
                 ont_domain = ont.domain
