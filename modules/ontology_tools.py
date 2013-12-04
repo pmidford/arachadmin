@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #from gluon import *  #temporary, until we're ready to integrate
-from urllib2 import urlopen
+import requests
 from lxml import etree
 
 ## This module is used to load owl format ontologies.  There should probably be a class for returned ontology information, but a dict might suffice
@@ -121,7 +121,7 @@ def load_from_url(ont_url,processor,root=None):
     processor - function to pass over the list of terms returned by the parser
     root - argument for processors (e.g., root for taxonomic clade to use)
     """
-    ontology_source=urlopen(ont_url)
+    ontology_source=requests.get(ont_url)
     parser = etree.XMLParser(target = ClassTarget())
     results = etree.parse(ontology_source, parser)
     return processor(results,root)
@@ -207,13 +207,14 @@ def check_date(urlstr):
     """
     Opens a connection, tries to retrieve a last-modified in the headers
     """
-    urlconn = urlopen(urlstr)
-    urlinfo = urlconn.info()
-    for header in urlinfo.headers:
-        if header.startswith('Last-Modified: '):
-            timestr = header[len('Last-Modified: '):len(header)]
-            urlconn.close()
+    r=requests.get(urlstr)
+    for header in r.headers:
+        if header == 'last-modified':
+            timestr = r.headers[header]
+            print "Found timestr %s" % timestr
+            r.close()
             return timestr
     else:        
-        urlconn.close()
+        print "No timestamp found in %s" % str(r.headers)
+        r.close()
         return ''
