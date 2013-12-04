@@ -9,7 +9,26 @@ def index():
     ontologies = db().select(db.ontology_source.ALL)
     result = [ontology for ontology in ontologies]
     return {"ontologies": result}
-    
+
+_CONF_OBJ_DICT = {}
+
+def get_conf(request,domain):
+    """ 
+    Lifted from phylografter's externalproc.py (so presumibly originally
+    from Mark Holder), this manages configuration for ontology parsing.
+    This allows definition of domain specific parsing and filtering rules
+    (once fully implemented)
+    """
+    global _CONF_OBJ_DICT
+    app_name = request.application
+    c = _CONF_OBJ_DICT.get(app_name)
+    if c is None:
+        from ConfigParser import SafeConfigParser
+        c = SafeConfigParser({})
+        c.read("applications/%s/private/localconfig" % request.application)
+        _CONF_OBJ_DICT[app_name] = c
+    return c
+
 UPDATE_FORMAT = "%a, %d %b %Y %H:%M:%S GMT"
 
 def check_modified():
@@ -22,6 +41,7 @@ def check_modified():
     from ontology_tools import check_date,update_ontology
     from datetime import datetime
     import time
+    print "Configuration is %s" % str(get_conf(request,"cache"))
     ontologies = db().select(db.ontology_source.ALL)
     for ont in ontologies:
         source_update = check_date(ont.source_url)

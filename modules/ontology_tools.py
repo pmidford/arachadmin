@@ -25,24 +25,6 @@ OWL_RESTRICTION = OWL_PREFIX + 'Restriction'
 OWL_SUBCLASS_OF = RDFS_PREFIX + 'subClassOf'
 IAO_ANNOTATION = OBO_PURL_PREFIX + 'IAO_0000115'
 
-_CONF_OBJ_DICT = {}
-
-def get_conf(request,domain):
-    """ 
-    Lifted from phylografter's externalproc.py (so presumibly originally
-    from Mark Holder), this manages configuration for ontology parsing.
-    This allows definition of domain specific parsing and filtering rules
-    (once fully implemented)
-    """
-    global _CONF_OBJ_DICT
-    app_name = request.application
-    c = _CONF_OBJ_DICT.get(app_name)
-    if c is None:
-        from ConfigParser import SafeConfigParser
-        c = SafeConfigParser({})
-        c.read("applications/%s/private/localconfig" % request.application)
-        _CONF_OBJ_DICT[app_name] = c
-    return c
 
 
 class ClassTarget(object):
@@ -111,7 +93,7 @@ class ClassTarget(object):
             self.containerclass[tag] = data
     def close(self):
         return self.class_list
-        
+
 ARACHNID_NODE = u'http://purl.obolibrary.org/obo/NCBITaxon_6854'
 
 def update_ontology(ont,type_name):
