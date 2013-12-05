@@ -96,7 +96,7 @@ class ClassTarget(object):
 
 ARACHNID_NODE = u'http://purl.obolibrary.org/obo/NCBITaxon_6854'
 
-def update_ontology(ont,type_name):
+def update_ontology(ont,type_name,cache_dir):
     """
     builds term list from the specified ontology source
     ont - row from ontology_source table
