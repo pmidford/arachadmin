@@ -42,7 +42,6 @@ def check_modified():
     from datetime import datetime
     import time
     config = get_conf(request,'')  #domain not currently used
-    ontology_cache = config.get('cache','ontology')
     ontologies = db().select(db.ontology_source.ALL)
     for ont in ontologies:
         source_update = check_date(ont.source_url)
@@ -63,11 +62,11 @@ def check_modified():
             old_date_secs = time.mktime(old_date_struct)
         else:
             old_date_secs = None
-        if source_update_secs:
-            if (old_date_secs is None) or (source_update_secs > old_date_secs):
+        if source_update_secs or True:
+            if (old_date_secs is None) or (source_update_secs > old_date_secs) or True:
                 print "Need to update %s, date is %s" % (ont.name,str(old_date))
                 type_name = db.ontology_processing[ont.processing].type_name
-                terms = update_ontology(ont,type_name,ontology_cache)
+                terms = update_ontology(ont,type_name,config,request.application)
                 merge_terms(terms,ont)
                 time_now = datetime.now()
                 db(db.ontology_source.id == ont.id).update(last_update=time_now)

@@ -96,7 +96,7 @@ class ClassTarget(object):
 
 ARACHNID_NODE = u'http://purl.obolibrary.org/obo/NCBITaxon_6854'
 
-def update_ontology(ont,type_name,cache_dir):
+def update_ontology(ont,type_name,config,app_name):
     """
     builds term list from the specified ontology source
     ont - row from ontology_source table
@@ -105,26 +105,46 @@ def update_ontology(ont,type_name,cache_dir):
     filter terms based on labels (e.g., remove samples w/o possible behavior)
     """
     source_url = ont.source_url
+    ontology_cache = config.get('ontology','cache')
+    taxonomy_root = config.get('ontology','taxonomy_root')
     term_list = []
     if type_name == 'NCBI taxonomy':  #check symbolically
-        term_list = load_from_url(source_url,build_ontology_tree,root=ARACHNID_NODE)
+        term_list = load_from_url(source_url,build_ontology_tree,config,app_name)
     elif type_name == 'OWL ontology':
-        term_list = load_from_url(source_url,simple_builder)
+        term_list = load_from_url(source_url,simple_builder,config,app_name)
     else:
         print 'unknown type name'
     return term_list
 
-def load_from_url(ont_url,processor,root=None):
+def load_from_url(ont_url,processor,config,app_name):
     """
     opens the url, parses the stream, then postprocesses (e.g., taxonomy filtering)
     ont_url - location of ontology text
     processor - function to pass over the list of terms returned by the parser
     root - argument for processors (e.g., root for taxonomic clade to use)
     """
-    ontology_source=requests.get(ont_url)
+    cache = ("applications/%s/" % app_name) + config.get('ontology','cache')
+    taxonomy_root = config.get('ontology','taxonomy_root')
+    print "cache is %s" % cache
+    print "root is %s" % taxonomy_root
+    local_filename = copy_to_cache(ont_url,cache)
+    ontology_source=open(local_filename)
     parser = etree.XMLParser(target = ClassTarget())
     results = etree.parse(ontology_source, parser)
-    return processor(results,root)
+    return processor(results,taxonomy_root)
+
+def copy_to_cache(url,cache):
+    from urlparse import urlparse
+    local_filename = cache + '/' + urlparse(url).path.split('/')[-1]
+    print "local filename is %s" % local_filename
+    r = requests.get(url, stream=True)
+    with open(local_filename, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024): 
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+                f.flush()
+    return local_filename
+
 
 def pplist(terms):
     """ debugging parser output"""
