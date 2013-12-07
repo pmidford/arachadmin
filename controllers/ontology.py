@@ -87,8 +87,8 @@ def merge_terms(terms,ont):
         new_id = -1
         if isinstance(term,unicode):  #terms should either be a list or a dict 
             t = terms[term]           #not one or the other
-        elif isinstance(term,dict) and 'about' in term:
-            t = term
+        #elif isinstance(term,dict) and 'about' in term:
+        #    t = term
         if t:
             term_irl = t['about']
             old_term = db(db.term.source_id == term_irl).select()
