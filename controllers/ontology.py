@@ -63,7 +63,7 @@ def check_modified():
         else:
             old_date_secs = None
         if source_update_secs or True:
-            if (old_date_secs is None) or (source_update_secs > old_date_secs) or True:
+            if (old_date_secs is None) or (source_update_secs > old_date_secs):
                 print "Need to update %s, date is %s" % (ont.name,str(old_date))
                 type_name = db.ontology_processing[ont.processing].type_name
                 terms = update_ontology(ont,type_name,config,request.application)
