@@ -25,18 +25,20 @@ response.google_analytics_id = None
 
 response.menu = [
     (T('Home'), False, URL('default', 'index'), []),
-    (T('Lists'), False, URL('default', 'index'),[       
+    (T('Lists'), False, URL('default', 'index'),[
         ('Publications', False, URL('publication','list', [])),
+        ('Authors', False, URL('author','list', [])),
         ('Assertions', False, URL('assertion','list',[])),
         ('Behavior Terms', False, URL('behavior_term','list',[])),
         ('Anatomy Terms', False, URL('anatomy_term','list'), [])
     ]),
     (T('Tools'), False, URL('default','index'),[
         ('Publication Status Tool', False, URL('publication','status_tool', [])),
+        ('Author Update Tool', False, URL('author','update_tool', [])),
         ('Assertion Status Tool', False, URL('assertion', 'status_tool', [])),
         ('Ontology Update Tool', False, URL('ontology','index',[]))
     ])
-    
+
 ]
 
 DEVELOPMENT_MENU = True
@@ -49,6 +51,12 @@ def _():
     # shortcuts
     app = request.application
     ctr = request.controller
+    # destructive tools that might require a database restore if misused
+    response.menu += [
+     (T('Truncate/Rebuild'), False, URL('default', 'index'), [
+      ('Authors', False, URL('author', 'truncate',[]))
+      ])
+    ]
     # useful links to internal and external resources
     response.menu += [
         (SPAN('web2py', _class='highlighted'), False, 'http://web2py.com', [

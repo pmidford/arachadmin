@@ -1,0 +1,6 @@
+{{extend 'layout.html'}}
+<h2>Verify you want to delete all authors (you can rebuild the list from the publications page)</h2>
+{{=A(T("No, please don't do that"), _href=URL('arachadmin','default','index'), _class='btn',
+     _style='margin-top: 1em;')}}
+{{=A(T("Go ahead blow away the authors list"), _href=URL('arachadmin','author','really_truncate'), _class='btn',
+     _style='margin-top: 1em;')}}

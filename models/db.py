@@ -30,7 +30,8 @@ db.define_table('publication_curation',
 
 db.define_table('author',
                 Field('last_name','string',writable=False,length=63),
-                Field('first_name','string',writable=False,length=63),
+                #Field('first_name','string',writable=False,length=63),
+                Field('given_names','string',writable=False,length=63),
                 format='%(last_name)s')
 
 db.define_table('publication',
@@ -56,8 +57,8 @@ db.define_table('publication',
                 format = '%(author_list)s (%(publication_year)s)')
 
 db.define_table('authorship',
-                Field('publication','reference publication',requires=IS_IN_DB(db,'publication.id','%(author_list)s')),
-                Field('author','reference author',requires=IS_IN_DB(db,'author.id','%(last_name)s, %(first_name)s')),
+                Field('publication','reference publication',requires=IS_IN_DB(db,'publication.id','%(author_list)s'),ondelete='CASCADE'),
+                Field('author','reference author',requires=IS_IN_DB(db,'author.id','%(last_name)s, %(first_name)s'),ondelete='CASCADE'),
                 Field('position','integer'),
                 format = '%(publication)s')
 
