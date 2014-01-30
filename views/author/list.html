@@ -1,12 +1,10 @@
 {{extend 'layout.html'}}
-<h1>This is the author/list.html template</h1>
-{{=BEAUTIFY(response._vars)}}
 <h1>List of authors</h1>
-{{headers=['id','last name','first name','given names']}}
+{{headers=['id','last name','given names']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
   TBODY(*[TR(TD(row.id),
              TD(row.last_name),
-             TD(row.first_name),
              TD(row.given_names))
-         for row in authors]))}}
+         for row in authors]),
+  _class="table table-condensed")}}
