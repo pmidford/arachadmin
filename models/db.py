@@ -30,9 +30,15 @@ db.define_table('publication_curation',
 
 db.define_table('author',
                 Field('last_name','string',writable=False,length=63),
-                #Field('first_name','string',writable=False,length=63),
                 Field('given_names','string',writable=False,length=63),
+                Field('assigned_id','string'),
+                Field('generated_id','string',writable=False),
+                Field('merge_set','reference author_merge',ondelete='NO ACTION'),
                 format='%(last_name)s')
+
+db.define_table('author_merge',
+                Field('preferred','reference author',ondelete='NO ACTION'),
+                format='%(id)s')
 
 db.define_table('publication',
                 Field('publication_type','string',length=31),
