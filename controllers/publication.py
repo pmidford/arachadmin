@@ -26,7 +26,7 @@ def enter():
     return dict(form=form)
     
 ## This needs a filter so rejected (or unreviewed) publications can be hidden and
-## ignored by the citation collision logic    
+## ignored by the citation collision logic
 def status_tool():
     '''
     Entry point to the publication status tools;
@@ -76,7 +76,7 @@ def update_author(pub):
                     db.author.insert(last_name=this_last_name,given_names=this_given_names)
             else:
                 db.author.insert(last_name=this_last_name,given_names=this_given_names)
-
+    redirect(URL('status_tool'))
 
 def update_dois():
     '''
