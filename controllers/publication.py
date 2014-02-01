@@ -51,7 +51,7 @@ def check_update():
     publications = db().select(db.publication.ALL, orderby=db.publication.author_list)
     for publication in publications:
         update_author(publication)
-    return
+    redirect(URL('publication','status_tool'))
 
 BADNAMES = ['et al.']
 
@@ -59,12 +59,12 @@ def update_author(pub):
     import publication_tools
     authors = pub.author_list.split(';')
     for author in authors:
-        author = author.strip()
-        names = author.split(',')
-        this_last_name = names[0]
-        this_given_names = "".join(names[1:]).strip()
+        (this_last_name,this_given_names) = publication_tools.split_name(author)
+#        author = author.strip()
+#        names = author.split(',')
+#        this_last_name = names[0]
+#        this_given_names = "".join(names[1:]).strip()
         if this_last_name not in BADNAMES: 
-            print "names = %s" % str(names)
             author_rows = db(db.author.last_name == this_last_name).select()
             if len(author_rows) > 0:
                 no_match = True
@@ -73,10 +73,12 @@ def update_author(pub):
                        if author_row['given_names'] == this_given_names:
                            no_match = False
                 if no_match:
-                    db.author.insert(last_name=this_last_name,given_names=this_given_names)
+                    new_id = db.author.insert(last_name=this_last_name,
+                                              given_names=this_given_names)
             else:
-                db.author.insert(last_name=this_last_name,given_names=this_given_names)
-    redirect(URL('status_tool'))
+                new_id = db.author.insert(last_name=this_last_name,
+                                          given_names=this_given_names)
+
 
 def update_dois():
     '''
