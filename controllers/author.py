@@ -13,8 +13,15 @@ def show():
     return dict(author=author)
     
 def update_tool():
+    import author_tools
+    print "Entering update_tool controller"
     authors = db().select(db.author.ALL, orderby=db.author.last_name)
-    return dict(authors=authors)
+    author_sets = author_tools.build_groups(authors)
+    return dict(authors=author_sets)
+
+def update_groups():
+    return dict(message="Hello World")
+
 
 def truncate():
     return dict()

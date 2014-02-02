@@ -1,0 +1,46 @@
+{{response.files.append(URL('static','css/arachadmin.css'))}}
+{{extend 'layout.html'}}
+{{def format_asets(author_sets):
+  result = []
+  split = [TR(TD(''),TD(''),TD(''))]
+  for aset in author_sets:
+     if len(aset) == 1:
+        primary = [TR(TD(aset[0].id),
+                      TD(aset[0].last_name),
+                      TD(aset[0].given_names),
+                      _class='authorgroup')]
+        result.append(primary)
+        result.append(split)
+     else:
+        primary = [TR(TD(aset[0].id),
+                      TD(aset[0].last_name),
+                      TD(aset[0].given_names),
+                      INPUT(_type='checkbox', _name=aset[0].id, _value=aset[0].id, value=True),
+                      _class='authorgroup',_border='0')]
+        rest = [TR(TD(author.id),
+                   TD(author.last_name),
+                   TD(author.given_names),
+                   INPUT(_type='checkbox', _name=author.id, _value=aset[0].id, value=False),
+                   _class='authorgroup',_border='0') for author in aset[1:]]
+        result.append(primary)
+        result.append(rest)
+        result.append(split)
+        pass
+     pass
+  return result}}
+
+<h1>Author Merge/Update Tool</h1>
+
+{{headers=['id','last name','given names']}}
+
+{{=FORM(
+    TABLE(
+      THEAD(TR(*[TH(header) for header in headers])),
+      TBODY(*format_asets(authors)),
+      _cellspacing='0'),
+    INPUT(_type='submit'),
+    _action=URL('author','update_groups'))}}
+
+
+
+

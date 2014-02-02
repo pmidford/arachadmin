@@ -51,11 +51,3 @@ def split_name(author):
     given = "".join(names[1:]).strip()
     return (last,given) 
 
-def possible_match(last1,given1,last2,given2):
-    if (last1 != last2):
-        return False
-    else:
-        return (given1[0] == given2[0])
-
-def more_complete_name(last1,given1,last2,given2):
-    return (len(given1) > len(given2))
