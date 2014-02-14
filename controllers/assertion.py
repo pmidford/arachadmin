@@ -20,7 +20,7 @@ def show():
 def enter():       
     if request.args(0) and request.args(1):
         assertion = db.assertion(request.args(0,cast=int))
-        participant = db.participant(request.args(1,case=int))
+        participant = db.participant(request.args(1,cast=int))
         link_table = make_link_table(assertion)
         main_form = SQLFORM(db.assertion,assertion)
         participant_form = SQLFORM(db.participant,participant)
@@ -80,10 +80,11 @@ def make_link_table(assertion):
     rows = db(db.participant2assertion.assertion==assertion.id).select()
     result = []
     for row in rows:
-        item = {}
-        item['assertion'] = row.assertion
-        item['index'] = row.participant_index
-        item['participant'] = render_participant(db.participant(row.participant))
+        item = {'assertion': row.assertion,
+                'index': row.participant_index,
+                'participant': render_participant(db.participant(row.participant)),
+                'participant_link' : URL('assertion','enter/' + str(assertion.id) + '/' + str(row.participant))
+                }
         result.append(item)
     return result
         
