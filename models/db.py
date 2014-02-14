@@ -122,6 +122,9 @@ db.define_table('evidence_code',
                 Field('code','string'))
 
 def render_participant(r):
+    """
+    generates pidgin functional owl syntax for a participant
+    """
     if r.label:
         return r.label
     if r.quantification == 'some':
@@ -156,10 +159,10 @@ db.define_table('assertion',
                 Field('publication',db.publication),
                 Field('publication_behavior','string'),
                 Field('behavior_term','reference term'),
-                Field('publication_taxon','string'),
+                #Field('publication_taxon','string'),
                 Field('taxon','reference taxon',requires=IS_EMPTY_OR(IS_IN_DB(db,'taxon.id','%(name)s'))),
                 Field('primary_participant','reference participant',requires=IS_EMPTY_OR(IS_IN_DB(db,'participant.id',render_participant))),
-                Field('publication_anatomy','string'),
+                #Field('publication_anatomy','string'),
                 Field('evidence','reference evidence_code'),
                 Field('generated_id','string',writable=False),
                 format='Assertion: %(generated_id)s')
