@@ -4,10 +4,15 @@
     <body>
         <h1>Current assertions</h1>
         <ul>
-            {{for assertion in assertions:}}
-            {{=LI("assertion #" , assertion.id, " reported in ", assertion.publication)}}
+            {{for item in items:}}
+            {{if 'participant' in item:}}
+            {{=LI("assertion #", A(item['id'], _href=item['link']), " ", item['behavior'], 
+                         ", by " ,item['participant'], " reported by ", item['publication_authors'])}}
+            {{else:}}
+            {{=LI("assertion #", A(item['id'], _href=item['link']), " ", item['behavior'], ", reported by ", item['publication_authors'])}}
             {{pass}}
-        </ul>
+            {{pass}}
+       </ul>
         {{response.toolbar()}}
     </body>
 </html>

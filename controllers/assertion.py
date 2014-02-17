@@ -7,17 +7,37 @@ def index():
     assertions = db().select(db.ontology_source.ALL, orderby=db.assertion.id)
     result = [assertion for assertion in assertions]
     return {"assertions": result}
-    
+
 def list():
     assertions = db().select(db.assertion.ALL, orderby=db.assertion.id)
-    return dict(assertions=assertions)
-    
+    results = []
+    for assertion in assertions:
+        primary = get_primary_participant(assertion)
+        pub = db.publication(assertion.publication)
+        if primary:
+            item = {'id': assertion.id,
+                    'link': URL('assertion','enter/' + str(assertion.id)  + '/' + str(primary)),
+                    'behavior': assertion.publication_behavior,
+                    'participant': render_participant(primary),
+                    'publication_authors': pub.author_list,
+                    'publication_year': pub.publication_year
+                    }
+        else:
+            item = {'id': assertion.id,
+                    'link': URL('assertion','enter/' + str(assertion.id)),
+                    'behavior': assertion.publication_behavior,
+                    'publication_authors': pub.author_list,
+                    'publication_year': pub.publication_year
+                    }
+        results.append(item)
+    return dict(items=results)
+
 def show():
     assertion = db.assertion(request.args(0,cast=int)) or redirect(URL('list'))
     form = SQLFORM(db.assertion)
     return dict(assertion=assertion)
-    
-def enter():       
+
+def enter():
     if request.args(0) and request.args(1):
         assertion = db.assertion(request.args(0,cast=int))
         participant = db.participant(request.args(1,cast=int))
@@ -46,6 +66,7 @@ def enter():
         link_table = []
     if main_form.process().accepted:
         assertion = main_form.vars.id
+        redirect(URL('assertion','enter/' + str(assertion)))
         response.flash = 'assertion table modified'
     elif main_form.errors:
         response.flash = 'errors in assertion submission'
@@ -56,14 +77,14 @@ def enter():
                                 (db.participant2assertion.participant==participant_id)).select()
             other_links = db(db.participant2assertion.assertion==assertion).select()
             if existing_links:
-                response.flash = 'participant table unchanged'
+                response.flash = 'participant updated'
                 pass
             elif other_links:
                 db.participant2assertion.insert(assertion=assertion,
                                                 participant=participant_id,
                                                 participant_index=len(other_links)+1)
                 link_table = make_link_table(assertion)
-                response.flash = 'participant table modified'
+                response.flash = 'new participant added to table'
             else:
                 db.participant2assertion.insert(assertion=assertion,
                                                 participant=participant_id,
@@ -75,6 +96,12 @@ def enter():
     elif participant_form.errors:
         response.flash = 'errors in participant submission'
     return dict(main_form=main_form,participant_form=participant_form,link_table=link_table)
+
+def get_primary_participant(assertion):
+    rows = db((db.participant2assertion.assertion==assertion.id) & (db.participant2assertion.participant_index==1)).select()
+    if len(rows) ==1:
+        return rows[0].participant
+    
     
 def make_link_table(assertion):
     rows = db(db.participant2assertion.assertion==assertion.id).select()
