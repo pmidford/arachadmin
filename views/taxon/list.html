@@ -1,13 +1,23 @@
+{{left_sidebar_enabled,right_sidebar_enabled=True,('message' in globals())}}
 {{extend 'layout.html'}}
-<h1>List of taxa</h1>
-{{headers=['id','name','NCBI id','Open Tree id','author','year','generated id']}}
+<h1>List of curated taxa not in NCBI</h1>
+{{headers=['id','name','external id','authority','author','year','parent','parent_term','merged','merge_status']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
-  TBODY(*[TR(TD(row.id),
-             TD(row.name),
-             TD(row.ncbi_id),
-             TD(row.ottol_id),
-             TD(row.author),
-             TD(row.year),
-             TD(row.generated_id))
-         for row in taxa]))}}
+  TBODY(*[TR(TD(item['id']),
+             TD(item['name']),
+             TD(item['external_id']),
+             TD(item['authority']),
+             TD(item['author']),
+             TD(item['year']),
+             TD(item['parent']),
+             TD(item['rooted_parent']),
+             TD(item['merged']),
+             TD(item['merge_status']))
+         for item in items]))}}
+
+{{block left_sidebar}}
+{{=A(T("Check/Merge into Terms"), _href=URL('arachadmin','taxon','merge'), _class='btn',
+     _style='margin-top: 1em;')}}
+<br/>
+{{end}}

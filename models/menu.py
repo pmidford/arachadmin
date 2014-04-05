@@ -30,7 +30,8 @@ response.menu = [
         ('Authors', False, URL('author','list', [])),
         ('Assertions', False, URL('assertion','list',[])),
         ('Behavior Terms', False, URL('behavior_term','list',[])),
-        ('Anatomy Terms', False, URL('anatomy_term','list'), [])
+        ('Anatomy Terms', False, URL('anatomy_term','list'), []),
+        ('Taxa (non-NCBI)', False, URL('taxon','list'), [])
     ]),
     (T('Tools'), False, URL('default','index'),[
         ('Publication Status Tool', False, URL('publication','status_tool', [])),
