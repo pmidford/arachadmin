@@ -50,14 +50,24 @@ def enter():
     return dict(form=form)
 
 def merge():
-    taxa = db().select(db.taxon.ALL, orderby=db.taxon.id)
+    updateCount = 0;
+    domain_q = (db.domain.name=='taxonomy')
+    tax_domain_row = db(domain_q).select()
+    tax_domain = tax_domain_row[0]['id']
+    print tax_domain
+    taxa = db().select(db.taxon.ALL)
     for taxon in taxa:
-        q = db.term.label == taxon.name
+        q = (db.term.label == taxon.name)
         rows = db(q).select()
         if (len(rows)>0):
             print "found term for %s" % taxon.name
-            taxon.update_record(merged=True)
+            db.taxon[taxon.id]=dict(merged=True)
+        elif taxon.parent_term != None:
+            new_id = db.term.insert(source_id=taxon['external_id'])
+            row = db.term[new_id]
+            updateCount = updateCount + 1;
+            db.term[new_id]= dict(label=taxon['name'],domain=tax_domain,authority=taxon['authority'])
         else:
             print "didn't find term for %s" % taxon.name
-            taxon.update_record(merged=False)
-    return None
+            db.taxon[taxon.id] = dict(merged=False,merge_status='Parent unknown')
+    redirect(URL('list'))
