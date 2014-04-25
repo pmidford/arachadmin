@@ -1,39 +1,54 @@
 # -*- coding: utf-8 -*-
-# modified portions of this file are released under the MIT License, web2py portions were previously assigned to the public domain
+# modified portions of this file are released under the MIT License,
+# web2py portions were previously assigned to the public domain
 
-# This controller is reponsible for the initial page shown when arachadmin starts up.
 
 def index():
+    """
+    This function is reponsible for the initial (home) page shown
+    when arachadmin starts up.
+    """
     result = dict()
-    result['publications'] = db().select(db.publication.ALL, orderby=db.publication.author_list)
-    result['assertions'] = db().select(db.assertion.ALL, orderby=db.assertion.id)
+    result['publications'] = db().select(
+        db.publication.ALL,
+        orderby=db.publication.author_list)
+    result['claims'] = db().select(
+        db.claim.ALL, orderby=db.claim.id)
     result['taxa'] = db().select(db.taxon.ALL, orderby=db.taxon.id)
-    #taxon_synonyms = db().select(db.taxon_synonym.ALL, orderby=db.taxon_synonym.id)
-    #result['behavior_terms'] = db().select(db.behavior_term.ALL, orderby=db.behavior_term.id)
-    #result['anatomy_terms'] = db().select(db.anatomy_term.ALL, orderby=db.anatomy_term.id)
     return result
 
+
 def list_publications():
-    publications = db().select(db.publication.ALL, orderby=db.publication.author_list)
+    publications = db().select(
+        db.publication.ALL,
+        orderby=db.publication.author_list)
     return dict(publications=publications)
 
-def list_assertions():
-    assertions = db().select(db.assertion.ALL, orderby=db.assertion.id)
-    return dict(assertions=assertions)
+
+def list_claims():
+    claims = db().select(
+        db.claim.ALL,
+        orderby=db.claim.id)
+    return dict(claims=claims)
+
 
 def show():
-    publication = db.publication(request.args(0,cast=int)) or redirect(URL('index'))
-    form = SQLFORM(db.publication,publication)
+    publication = (db.publication(request.args(0, cast=int)) or
+                   redirect(URL('index')))
+    form = SQLFORM(db.publication, publication)
     return dict(publication=publication)
 
+
 def enter():
-    publication = db.publication(request.args(0,cast=int)) or redirect(URL('index'))
-    form = SQLFORM(db.publication,publication)
+    publication = (db.publication(request.args(0, cast=int)) or
+                   redirect(URL('index')))
+    form = SQLFORM(db.publication, publication)
     if form.process().accepted:
         response.flash = 'publication table modified'
     elif form.errors:
         response.false = 'errors in submission'
     return dict(form=form)
+
 
 def user():
     """

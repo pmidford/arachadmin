@@ -5,16 +5,16 @@
 <h3>{{=message}}</h3>
 {{pass}}
 
-<h1>Assertion Status Tool</h1>
+<h1>Claim/Observation Status Tool</h1>
 {{headers=['ontology','url','last update']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
   TBODY(*[TR(TD(item.name),TD(item.source_url),TD(item.last_update))
-    for item in assertion]))}}
+    for item in claim]))}}
 
 
 {{block left_sidebar}}
-{{=A(T("Atomic Validation"), _href=URL("arachadmin","assertion","check_valid_atomic"), _class="btn",
+{{=A(T("Atomic Validation"), _href=URL("arachadmin","claim","check_valid_atomic"), _class="btn",
     _style="margin-top: 1em")}}
 <br/>
 

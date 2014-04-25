@@ -1,10 +1,12 @@
 # coding: utf8
 
+
 def index():
     """
     Entry point to the taxon entry tools;
     """
     redirect(URL('list'))
+
 
 def list():
     """
@@ -32,15 +34,22 @@ def list():
         results.append(item)
     return dict(items=results)
 
+
 def show():
-    taxa = db.taxon(request.args(0,cast=int)) or redirect(URL('list'))
+    '''display one taxon record'''
+    taxa = db.taxon(request.args(0, cast=int)) or redirect(URL('list'))
     form = SQLFORM(db.taxon)
     return dict(taxa=taxa)
 
+
 def enter():
+    """
+    supports entering a new taxon or editing an existing taxon
+    by supplying its database id
+    """
     if request.args(0):
-        taxon = db.taxon(request.args(0,cast=int))
-        form = SQLFORM(db.taxon,taxon)
+        taxon = db.taxon(request.args(0, cast=int))
+        form = SQLFORM(db.taxon, taxon)
     else:
         form = SQLFORM(db.taxon)
     if form.process().accepted:
@@ -49,25 +58,28 @@ def enter():
         response.false = 'errors in submission'
     return dict(form=form)
 
+
 def merge():
-    updateCount = 0;
-    domain_q = (db.domain.name=='taxonomy')
+    """
+    merge taxa into terms table
+    """
+    domain_q = (db.domain.name == 'taxonomy')
     tax_domain_row = db(domain_q).select()
     tax_domain = tax_domain_row[0]['id']
-    print tax_domain
     taxa = db().select(db.taxon.ALL)
     for taxon in taxa:
-        q = (db.term.label == taxon.name)
-        rows = db(q).select()
-        if (len(rows)>0):
+        term_q = (db.term.label == taxon.name)
+        rows = db(term_q).select()
+        if rows:
             print "found term for %s" % taxon.name
-            db.taxon[taxon.id]=dict(merged=True)
-        elif taxon.parent_term != None:
+            db.taxon[taxon.id] = dict(merged=True)
+        elif taxon.parent_term is not None:
             new_id = db.term.insert(source_id=taxon['external_id'])
-            row = db.term[new_id]
-            updateCount = updateCount + 1;
-            db.term[new_id]= dict(label=taxon['name'],domain=tax_domain,authority=taxon['authority'])
+            db.term[new_id] = dict(label=taxon['name'],
+                                   domain=tax_domain,
+                                   authority=taxon['authority'])
         else:
             print "didn't find term for %s" % taxon.name
-            db.taxon[taxon.id] = dict(merged=False,merge_status='Parent unknown')
+            db.taxon[taxon.id] = dict(merged=False,
+                                      merge_status='Parent unknown')
     redirect(URL('list'))

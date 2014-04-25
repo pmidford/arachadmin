@@ -1,14 +1,14 @@
 {{extend 'layout.html'}}
-<h1>Enter/edit record for an assertion</h1>
+<h1>Enter/edit record for an claim/observation</h1>
 <DIV class="row">
    <DIV class="span6">
-       <h3>Assertion form</h3>
+       <h3>Claim/Observation form</h3>
       {{=main_form}}
        <h3>Table of associated participants</h3>
-      {{headers=['assertion','participant','index']}}
+      {{headers=['claim','participant','index']}}
       {{=TABLE(
          THEAD(TR(*[TH(header) for header in headers])),
-         TBODY(*[TR(TD(row['assertion']),
+         TBODY(*[TR(TD(row['claim']),
                     TD(A(row['participant'],_href=row['participant_link'])),
                     TD(row['index']))
          for row in link_table]))}}
@@ -19,6 +19,6 @@
    </DIV>
 </DIV>
 <br/>
-{{=A(T("Enter New Assertion"), _href=URL('arachadmin','assertion','enter'), _class='btn',
+{{=A(T("Enter New Claim/Observation"), _href=URL('arachadmin','claim','enter'), _class='btn',
      _style='margin-top: 1em;')}}
 <br/>

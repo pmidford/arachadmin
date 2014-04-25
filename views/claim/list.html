@@ -2,14 +2,14 @@
 <html>
     <head></head>
     <body>
-        <h1>Current assertions</h1>
+        <h1>Current claims</h1>
         <ul>
             {{for item in items:}}
             {{if 'participant' in item:}}
-            {{=LI("assertion #", A(item['id'], _href=item['link']), " ", item['behavior'], 
+            {{=LI("claim #", A(item['id'], _href=item['link']), " ", item['behavior'], 
                          ", by " ,item['participant'], " reported by ", item['publication_authors'])}}
             {{else:}}
-            {{=LI("assertion #", A(item['id'], _href=item['link']), " ", item['behavior'], ", reported by ", item['publication_authors'])}}
+            {{=LI("claim #", A(item['id'], _href=item['link']), " ", item['behavior'], ", reported by ", item['publication_authors'])}}
             {{pass}}
             {{pass}}
        </ul>
