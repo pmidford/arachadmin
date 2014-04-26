@@ -6,3 +6,5 @@ sessions
 databases
 cache
 *.DS_Store
+progress.log
+
