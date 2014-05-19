@@ -147,5 +147,20 @@ def make_link_table(claim):
 
 
 def status_tool():
-    a = db.claim
+    """
+    Scans the set of claims in the database and generates a list of issues to fix.
+    """
+    import claim_tools
+    claims = db().select(db.claim.ALL)
+    result = []
+    for claim in claims:
+        issues = claim_tools.issues_list(claim, db)
+        if issues:
+            for issue in issues:
+                claim_descr = claim_tools.make_descr(claim) # not very pythonic way of doing this
+                claim_item = (claim_descr, issue)
+                result.append(claim_item)
+    return {"report": result}
+
+
     return
