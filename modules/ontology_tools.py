@@ -159,6 +159,15 @@ def process_tree(ont_tree):
         print child.tag
     return ont_tree
 
+FILTERLABELELEMENTS = ["sp. BOLD:",
+                       "JXZ-2013",
+                       "PS-2009",
+                       "WOCS-2009",
+                       "LB-2013",
+                       "MCZDNAD",
+                       "DNA10"
+                       ]
+
 def build_ontology_tree(terms,root=None,label_filter=None):
     """
     postprocess tree returned from parsing taxonomic ontology
