@@ -3,23 +3,29 @@
 
 
 def index():
-    '''default dispaly is a list of publications'''
+    """
+    Default entry is a list of publications
+    """
     redirect(URL('list'))
 
 
 def list():
-    '''grab all the publications ordered by first author last name'''
+    """
+    grab all the publications ordered by first author last name
+    """
     publications = db().select(db.publication.ALL,
                                orderby=db.publication.author_list)
-    return dict(publications=publications)
+    return {"publications": publications}
 
 
 def show():
-    '''Show a single publication'''
+    """
+    Show a single publication
+    """
     publication = (db.publication(request.args(0, cast=int)) or
                    redirect(URL('list')))
     form = SQLFORM(db.publication)
-    return dict(publication=publication)
+    return {"publication": publication}
 
 
 def enter():
@@ -35,7 +41,7 @@ def enter():
         response.flash = 'publication table modified'
     elif form.errors:
         response.false = 'errors in submission'
-    return dict(form=form)
+    return {"form": form}
 
 
 # This needs a filter so rejected (or unreviewed) publications can be hidden
@@ -52,10 +58,11 @@ def status_tool():
     result = []
     for publication in publications:
         issues = publication_tools.issues_list(publication, db)
-        pub_item = (publication_tools.make_citation(publication),
-                    issues,
-                    publication.id)
-        result.append(pub_item)
+        if issues:
+            pub_cit = publication_tools.make_citation(publication)
+            for issue in issues:
+                pub_item = (pub_cit, issues, publication.id)
+                result.append(pub_item)
     return {"report": result}
 
 

@@ -35,17 +35,23 @@ def list():
                     'publication_year': pub.publication_year
                     }
         results.append(item)
-    return dict(items=results)
+    return {"items": results}
 
 
 def show():
+    """
+    Show a single claim if argument is specified or default back
+    to the (default) list
+    """
     claim = (db.claim(request.args(0, cast=int)) or
              redirect(URL('list')))
     form = SQLFORM(db.claim)
-    return dict(claim=claim)
+    return {"claim": claim}
 
 
 def enter():
+    """
+    """
     if request.args(0) and request.args(1):
         claim = db.claim(request.args(0, cast=int))
         participant = db.participant(request.args(1, cast=int))
@@ -104,9 +110,9 @@ def enter():
             response.flash = 'error: no claim to link participant to'
     elif participant_form.errors:
         response.flash = 'errors in participant submission'
-    return dict(main_form=main_form,
-                participant_form=participant_form,
-                link_table=link_table)
+    return {"main_form": main_form,
+            "participant_form": participant_form,
+            "link_table": link_table}
 
 
 def get_primary_participant(claim):
