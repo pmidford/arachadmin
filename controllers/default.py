@@ -27,7 +27,7 @@ def list_claims():
     claims = db().select(
         db.claim.ALL,
         orderby=db.claim.id)
-    return {'claims': claims)
+    return {'claims': claims}
 
 
 def show():
@@ -45,7 +45,7 @@ def enter():
         response.flash = 'publication table modified'
     elif form.errors:
         response.flash = 'errors in submission'
-    return {'form': form)
+    return {'form': form}
 
 
 def user():

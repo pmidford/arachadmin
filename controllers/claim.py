@@ -21,7 +21,7 @@ def list():
         pub = db.publication(claim.publication)
         if primary:
             item = {'id': claim.id,
-                    'link': claim_tools.make_participant_url(claim.id, primary),
+                    'link': make_participant_url(claim.id, primary),
                     'behavior': claim.publication_behavior,
                     'participant': render_participant(primary),
                     'publication_authors': pub.author_list,
@@ -29,7 +29,7 @@ def list():
                     }
         else:
             item = {'id': claim.id,
-                    'link': claim_tools.make_claim_url(claim),
+                    'link': make_claim_url(claim),
                     'behavior': claim.publication_behavior,
                     'publication_authors': pub.author_list,
                     'publication_year': pub.publication_year
