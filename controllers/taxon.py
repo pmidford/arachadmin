@@ -32,14 +32,16 @@ def list():
                 'merge_status': taxon.merge_status
                 }
         results.append(item)
-    return dict(items=results)
+    return {'items': results}
 
 
 def show():
-    '''display one taxon record'''
+    """
+    display one taxon record
+    """
     taxa = db.taxon(request.args(0, cast=int)) or redirect(URL('list'))
     form = SQLFORM(db.taxon)
-    return dict(taxa=taxa)
+    return {'taxa': taxa}
 
 
 def enter():
@@ -56,7 +58,7 @@ def enter():
         response.flash = 'taxon table modified'
     elif form.errors:
         response.false = 'errors in submission'
-    return dict(form=form)
+    return {'form': form}
 
 
 def merge():

@@ -8,35 +8,33 @@ def index():
     This function is reponsible for the initial (home) page shown
     when arachadmin starts up.
     """
-    result = dict()
-    result['publications'] = db().select(
-        db.publication.ALL,
-        orderby=db.publication.author_list)
-    result['claims'] = db().select(
-        db.claim.ALL, orderby=db.claim.id)
-    result['taxa'] = db().select(db.taxon.ALL, orderby=db.taxon.id)
-    return result
+    publist = db().select(db.publication.ALL, 
+                          orderby=db.publication.author_list)
+    claimslist = db().select(db.claim.ALL, orderby=db.claim.id)
+    taxalist = db().select(db.taxon.ALL, orderby=db.taxon.id)
+    return {'publications': publist,
+            'claims': claimslist,
+            'taxa': taxalist}
 
 
 def list_publications():
-    publications = db().select(
-        db.publication.ALL,
-        orderby=db.publication.author_list)
-    return dict(publications=publications)
+    publications = db().select(db.publication.ALL,
+                               orderby=db.publication.author_list)
+    return {'publications': publications}
 
 
 def list_claims():
     claims = db().select(
         db.claim.ALL,
         orderby=db.claim.id)
-    return dict(claims=claims)
+    return {'claims': claims)
 
 
 def show():
     publication = (db.publication(request.args(0, cast=int)) or
                    redirect(URL('index')))
     form = SQLFORM(db.publication, publication)
-    return dict(publication=publication)
+    return {'publication': publication}
 
 
 def enter():
@@ -46,8 +44,8 @@ def enter():
     if form.process().accepted:
         response.flash = 'publication table modified'
     elif form.errors:
-        response.false = 'errors in submission'
-    return dict(form=form)
+        response.flash = 'errors in submission'
+    return {'form': form)
 
 
 def user():
