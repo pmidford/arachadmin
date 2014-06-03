@@ -5,13 +5,12 @@
 <h3>{{=message}}</h3>
 {{pass}}
 
-<h1>Publication Status Tool</h1>
-{{=BEAUTIFY(response._vars)}}
+<h1>Claim/Observation Status Tool</h1>
 
 {{headers=['claim','issue']}}
 {{=TABLE(
   THEAD(TR(*[TH(header) for header in headers])),
-  TBODY(*[TR(TD(A(item[0],_href=URL("enter", args=item[2]))),
+  TBODY(*[TR(TD(A(item[0],_href=item[2])),
              TD(SPAN(str(item[1]),_style="color:#CC0000; font-weight:bold")))
     for item in report]))}}
 

@@ -200,6 +200,7 @@ def render_participant(r):
         head = str(db.term(r.substrate).label)
     return "%s %s" % (quan, head)
 
+
 db.define_table(
     'participant',
     Field('taxon', 'reference term'),

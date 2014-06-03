@@ -13,6 +13,7 @@ def index():
 def list():
     """
     """
+    from claim_tools import make_claim_url, make_participant_url
     claims = db().select(db.claim.ALL, orderby=db.claim.id)
     results = []
     for claim in claims:
@@ -20,7 +21,7 @@ def list():
         pub = db.publication(claim.publication)
         if primary:
             item = {'id': claim.id,
-                    'link': make_participant_url(claim.id, primary),
+                    'link': claim_tools.make_participant_url(claim.id, primary),
                     'behavior': claim.publication_behavior,
                     'participant': render_participant(primary),
                     'publication_authors': pub.author_list,
@@ -28,29 +29,13 @@ def list():
                     }
         else:
             item = {'id': claim.id,
-                    'link': make_claim_url(claim),
+                    'link': claim_tools.make_claim_url(claim),
                     'behavior': claim.publication_behavior,
                     'publication_authors': pub.author_list,
                     'publication_year': pub.publication_year
                     }
         results.append(item)
     return dict(items=results)
-
-
-def make_participant_url(claim, participant):
-    """
-    generates url that links to editing page for this claim and its
-    primary participant
-    """
-    return URL('claim',
-               'enter/%d/%d' % (claim, participant))
-
-
-def make_claim_url(claim):
-    """
-    generates url that links to the editing page for this claim
-    """
-    return URL('claim', 'enter/' + str(claim.id))
 
 
 def show():
@@ -132,6 +117,9 @@ def get_primary_participant(claim):
 
 
 def make_link_table(claim):
+    """
+    """
+    from claim_tools import make_claim_url, make_participant_url
     rows = db(db.participant2claim.claim == claim.id).select()
     result = []
     for row in rows:
@@ -140,7 +128,7 @@ def make_link_table(claim):
                 'participant': render_participant(db.participant(
                     row.participant)),
                 'participant_link': make_participant_url(claim.id,
-                                                         row.participant)
+                                                                     row.participant)
                 }
         result.append(item)
     return result
@@ -157,10 +145,9 @@ def status_tool():
         issues = claim_tools.issues_list(claim, db)
         if issues:
             for issue in issues:
-                claim_descr = claim_tools.make_descr(claim) # not very pythonic way of doing this
-                claim_item = (claim_descr, issue)
+                claim_descr = claim.publication_behavior # not very pythonic way of doing this
+                print "descr = %s" % str(claim_descr)
+                claim_item = (claim_descr, issue[0], issue[1])
                 result.append(claim_item)
+    print result
     return {"report": result}
-
-
-    return
