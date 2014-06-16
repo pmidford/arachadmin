@@ -28,6 +28,7 @@ response.menu = [
     (T('Lists'), False, URL('default', 'index'), [
         ('Publications', False, URL('publication', 'list', [])),
         ('Authors', False, URL('author', 'list', [])),
+        ('Narratives', False, URL('narrative', 'list', [])),
         ('Claims', False, URL('claim', 'list', [])),
         ('Behavior Terms', False, URL('behavior_term', 'list', [])),
         ('Anatomy Terms', False, URL('anatomy_term', 'list'), []),
