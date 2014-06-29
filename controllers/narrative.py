@@ -15,4 +15,17 @@ def list():
               for narrative in narratives] 
     return {"items": result}
 
-        
+def enter():
+    """
+    provides a form for creating/editing a narrative record
+    """
+    if request.args(0):
+        narrative = db.narrative(request.args(0, cast=int))
+        form = SQLFORM(db.narrative, narrative)
+    else:
+        form = SQLFORM(db.narrative)
+    if form.process().accepted:
+        response.flash = 'narrative table modified'
+    elif form.errors:
+        response.flash = 'errors in submission'
+    return {'form': form}

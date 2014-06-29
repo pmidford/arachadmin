@@ -101,9 +101,11 @@ db.define_table('synonym',
                 Field('term', 'reference term'),
                 migrate=False)
 
+
 db.define_table('individual',
                 Field('source_id', 'string', length=512),
                 Field('generated_id', 'string', length=512, writable=False),
+                Field('label', 'string', length=64),
                 migrate=False)
 
 def render_narrative(n):
@@ -170,24 +172,44 @@ environment_domain_id = db(db.domain.name == 'environment').select().first().id
 # this is both incomplete and partially incorrect
 substrate_domains = db(db.domain.name == environment_domain_id)
 
-db.define_table(
-    'taxon',
-    Field('name', 'string', length=512),
-    Field('author', 'string', length=512),
-    Field('year', 'string', length=512),
-    Field('external_id', 'string', length=64),
-    Field('authority', 'reference authority', ondelete='NO ACTION'),
-    Field('parent',
-          'reference taxon',
-          requires=IS_EMPTY_OR(IS_IN_DB(db,
-                                        'taxon.id',
-                                        '%(name)s'))),
-    Field('generated_id', 'string', length=512, writable=False),
-    Field('parent_term', 'reference term'),
-    Field('merged', 'boolean', writable=False),
-    Field('merge_status', 'string', length=64),
-    format='%(name)s',
-    migrate=False)
+db.define_table('participant_link',
+                Field('predicate', 'reference term', ondelete='NO ACTION'),
+                Field('domain_individual', 
+                      'reference individual', 
+                      ondelete='NO ACTION'),
+                Field('domain_term',
+                      'reference term',
+                      ondelete='NO ACTION'),
+                Field('range_individual',
+                      'reference individual',
+                      ondelete='NO ACTION'),
+                Field('range_term',
+                      'reference term',
+                      ondelete='NO ACTION'),
+                migrate=False)
+
+db.define_table('taxon',
+                Field('name', 'string', length=512),
+                Field('author', 'string', length=512),
+                Field('year', 'string', length=512),
+                Field('external_id', 'string', length=64),
+                Field('authority', 
+                      'reference authority', 
+                      ondelete='NO ACTION'),
+                Field('parent',
+                      'reference taxon',
+                      requires=IS_EMPTY_OR(IS_IN_DB(db,
+                                                    'taxon.id',
+                                                    '%(name)s'))),
+                Field('generated_id', 
+                      'string', 
+                      length=512, 
+                      writable=False),
+                Field('parent_term', 'reference term'),
+                Field('merged', 'boolean', writable=False),
+                Field('merge_status', 'string', length=64),
+                format='%(name)s',
+                migrate=False)
 
 
 db.taxon.parent_term.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,
@@ -244,8 +266,14 @@ db.define_table('participant',
                 Field('publication_anatomy', 'string'),
                 Field('publication_substrate', 'string'),
                 Field('generated_id', 'string', writable=False),
+                Field('tail', 
+                      'reference participant_link',
+                       ondelete='NO ACTION'),
+                Field('head', 
+                      'reference participant_link',
+                       ondelete='NO ACTION'),
                 format=render_participant,
-                migrate=False)
+                migrate=True)
 
 db.participant.taxon.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,
                                                      'term.id',
@@ -281,18 +309,6 @@ db.define_table('claim',
 db.claim.behavior_term.requires = IS_EMPTY_OR(IS_IN_DB(behavior_domain,
                                                        'term.id',
                                                        '%(label)s'))
-
-
-db.define_table('claim2term',
-                Field('claim', 'reference claim'),
-                Field('term', 'reference term'),
-                migrate=False)
-
-
-db.define_table('anatomy2claim',
-                Field('anatomy_term', 'reference anatomy_term'),
-                Field('claim', 'reference claim'),
-                migrate=False)
 
 
 db.define_table('participant2claim',
