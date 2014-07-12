@@ -52,25 +52,15 @@ def show():
 def enter():
     """
     """
-    if request.args(0) and request.args(1):
-        claim = db.claim(request.args(0, cast=int))
-        participant = db.participant(request.args(1, cast=int))
+    claim_arg, participant_arg = get_args(request)
+    if claim_arg and participant_arg:
+        claim = db.claim(claim_arg)
+        participant = db.participant(participant_arg)
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
         participant_form = SQLFORM(db.participant, participant)
-    elif request.vars['claim'] and request.vars['participant']:
-        claim = db.claim(int(request.vars['claim']))
-        participant = db.participant(int(request.vars['participant']))
-        link_table = make_link_table(claim)
-        main_form = SQLFORM(db.claim, claim)
-        participant_form = SQLFORM(db.participant, participant)
-    elif request.args(0):
-        claim = db.claim(request.args(0, cast=int))
-        link_table = make_link_table(claim)
-        main_form = SQLFORM(db.claim, claim)
-        participant_form = SQLFORM(db.participant)
-    elif request.vars['claim']:
-        claim = db.claim(int(request.vars['claim']))
+    elif claim_arg:
+        claim = db.claim(claim_arg)
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
         participant_form = SQLFORM(db.participant)
@@ -114,6 +104,20 @@ def enter():
             "participant_form": participant_form,
             "link_table": link_table}
 
+def get_args(req):
+    if req.args(0):
+        claim = req.args(0, cast=int)
+    elif req.vars['claim']:
+        claim = int(req.vars['claim'])
+    else:
+        claim = None
+    if req.args(1):
+        participant = req.args(1, cast=int)
+    elif req.vars['participant']:
+        participant = int(req.vars['participant'])
+    else:
+        participant = None
+    return (claim,participant)
 
 def get_primary_participant(claim):
     rows = db((db.participant2claim.claim == claim.id) &
@@ -129,12 +133,11 @@ def make_link_table(claim):
     rows = db(db.participant2claim.claim == claim.id).select()
     result = []
     for row in rows:
+        part = row.participant
         item = {'claim': row.claim,
                 'index': row.participant_index,
-                'participant': render_participant(db.participant(
-                    row.participant)),
-                'participant_link': make_participant_url(claim.id,
-                                                                     row.participant)
+                'participant': render_participant(db.participant(part)),
+                'participant_link': make_participant_url(claim.id, part)
                 }
         result.append(item)
     return result
@@ -152,8 +155,16 @@ def status_tool():
         if issues:
             for issue in issues:
                 claim_descr = claim.publication_behavior # not very pythonic way of doing this
-                print "descr = %s" % str(claim_descr)
                 claim_item = (claim_descr, issue[0], issue[1])
                 result.append(claim_item)
     print result
     return {"report": result}
+
+
+def view_participant():
+    """Don't really need to treat participant records as first class
+    entities, but want a place to display and edit chains"""
+
+
+def edit_participant():
+    """a stub for now"""
