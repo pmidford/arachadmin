@@ -1,0 +1,31 @@
+{{left_sidebar_enabled,right_sidebar_enabled=True,('message' in globals())}}
+{{extend 'layout.html'}}
+
+{{if 'message' in globals():}}
+<h3>{{=message}}</h3>
+{{pass}}
+
+<p>Arachnolingua contains {{=len(publications)}} publications and {{=len(claims)}} claims </p>
+<h1>Current publications</h1>
+<ul>
+{{for pub in publications:}}
+{{=LI(pub.author_list,"  ",pub.publication_year)}}
+{{pass}}
+</ul>
+
+{{block left_sidebar}}
+{{=A(T("Enter Publications"), _href=URL('arachadmin','publication','enter'), _class='btn',
+     _style='margin-top: 1em;')}}
+<br/>
+{{=A(T("Enter Narratives"), _href=URL('arachadmin','narrative','enter'), _class='btn',
+     _style='margin-top: 1em;')}}
+<br/>
+{{=A(T("Enter Claims"), _href=URL('arachadmin','claim','enter'), _class='btn',
+     _style='margin-top: 1em;')}}
+<br/>
+{{=A(T("Enter Taxa"), _href=URL('arachadmin','taxon','enter'), _class='btn',
+     _style='margin-top: 1em;')}}
+<br/>
+{{=A(T("Enter Individuals"), _href=URL('arachadmin','individual','enter'), _class='btn',
+     _style='margin-top: 1em;')}}
+{{end}}
