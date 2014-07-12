@@ -106,6 +106,7 @@ db.define_table('individual',
                 Field('source_id', 'string', length=512),
                 Field('generated_id', 'string', length=512, writable=False),
                 Field('label', 'string', length=64),
+                Field('term', 'reference term'),
                 migrate=False)
 
 def render_narrative(n):
@@ -127,7 +128,7 @@ db.define_table('narrative',
 db.define_table('individual2narrative',
                 Field('individual', 'reference individual'),
                 Field('narrative', 'reference narrative'),
-                migrate=True)
+                migrate=False)
 
 db.define_table('domain',
                 Field('name', 'string'),
@@ -185,6 +186,9 @@ db.define_table('participant_link',
                       ondelete='NO ACTION'),
                 Field('range_term',
                       'reference term',
+                      ondelete='NO ACTION'),
+                Field('participant',
+                      'reference partipant',
                       ondelete='NO ACTION'),
                 migrate=False)
 
@@ -266,14 +270,14 @@ db.define_table('participant',
                 Field('publication_anatomy', 'string'),
                 Field('publication_substrate', 'string'),
                 Field('generated_id', 'string', writable=False),
-                Field('tail', 
+                Field('tail',
                       'reference participant_link',
                        ondelete='NO ACTION'),
-                Field('head', 
+                Field('head',
                       'reference participant_link',
                        ondelete='NO ACTION'),
                 format=render_participant,
-                migrate=True)
+                migrate=False)
 
 db.participant.taxon.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,
                                                      'term.id',
