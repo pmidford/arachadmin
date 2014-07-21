@@ -31,8 +31,9 @@ def enter():
 def builder():
     """ """
     
-    form = FORM(db.participant)
+    form = SQLFORM(db.participant)
     return {'form': form}
+
 
 def get_builder_args(req):
     if req.args(0):
@@ -40,7 +41,7 @@ def get_builder_args(req):
     elif req.vars['participant']:
         participant = int(req.vars['participant'])
     else:
-        raise new Exception("builder had no participant specified")
+        raise Exception("builder had no participant specified")
     if req.args(1):
         element = req.args(1, cast=int)
     elif req.vars['element']:
@@ -48,3 +49,30 @@ def get_builder_args(req):
     else:
         element = None
     return (participant,element)
+
+
+def element():
+    """ """
+    index = get_element_args(request)
+    if index:
+        form = SQLFORM(db.participant_element,index)
+    else:
+        form = SQLFORM(db.participant_element)
+    form.vars.participant = 1;
+    if form.accepts(request,session):
+        element = form.vars.id
+        redirect(URL('element2/' + str(element)))
+    return {'form': form}
+
+
+def get_element_args(req):
+    if req.args(0):
+        element = req.args(0, cast=int)
+    elif req.vars['element']:
+        element = int(req.vars['element'])
+    else:
+        element = None
+    return element
+
+def element2():
+    """ """

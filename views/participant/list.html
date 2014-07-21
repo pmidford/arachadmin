@@ -1,0 +1,7 @@
+{{extend 'layout.html'}}
+<h1>List of narratives</h1>
+{{headers=['narrative id', 'label', 'publication']}}
+{{=TABLE(
+  THEAD(TR(*[TH(header) for header in headers])),
+  TBODY(*[TR(TD(item[0]), )
+         for item in items]))}}

@@ -173,24 +173,48 @@ environment_domain_id = db(db.domain.name == 'environment').select().first().id
 # this is both incomplete and partially incorrect
 substrate_domains = db(db.domain.name == environment_domain_id)
 
-db.define_table('participant_link',
-                Field('predicate', 'reference term', ondelete='NO ACTION'),
-                Field('domain_individual', 
-                      'reference individual', 
-                      ondelete='NO ACTION'),
-                Field('domain_term',
-                      'reference term',
-                      ondelete='NO ACTION'),
-                Field('range_individual',
-                      'reference individual',
-                      ondelete='NO ACTION'),
-                Field('range_term',
-                      'reference term',
-                      ondelete='NO ACTION'),
-                Field('participant',
-                      'reference partipant',
+db.define_table('participant_type',
+                Field('label', 'string', length=20),
+                migrate=False)
+
+db.define_table('participant_element',
+                Field('type', 
+                      'reference participant_type',
+                      requires=IS_EMPTY_OR(IS_IN_DB(db,
+                                                    'participant_type.id',
+                                                    '%(label)s'))),
+
+                Field('participant', 
+                      'reference participant',
                       ondelete='NO ACTION'),
                 migrate=False)
+                
+
+
+db.define_table('participant_link',
+                Field('child', 'reference participant_element'),
+                Field('parent', 'reference participant_element'),
+                Field('predicate', 'reference term', ondelete='NO ACTION'),
+                migrate=False)
+
+db.define_table('pelement2term',
+                Field('element',
+                      'reference participant_element',
+                      ondelete='NO ACTION'),
+                Field('term',
+                      'reference term',
+                      ondelete='NO ACTION'),
+                migrate=False)
+
+db.define_table('pelement2individual',
+                Field('element',
+                      'reference participant_element',
+                      ondelete='NO ACTION'),
+                Field('individual',
+                      'reference individual',
+                      ondelete='NO ACTION'),
+                migrate=False)
+
 
 db.define_table('taxon',
                 Field('name', 'string', length=512),
