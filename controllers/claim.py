@@ -52,6 +52,8 @@ def show():
 def enter():
     """
     """
+    response.files.append(URL('static/js','d3.js'))
+    response.files.append(URL('static/css', 'd3test.css'))
     claim_arg, participant_arg = get_args(request)
     if claim_arg and participant_arg:
         claim = db.claim(claim_arg)
@@ -59,15 +61,22 @@ def enter():
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
         participant_form = SQLFORM(db.participant, participant)
+        element_list = []
+        elements = db(db.participant_element.participant == 
+                      participant.id).select()
+        if elements:
+            element_list = [element.id for element in elements]
     elif claim_arg:
         claim = db.claim(claim_arg)
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
         participant_form = SQLFORM(db.participant)
+        element_list = []
     else:
         main_form = SQLFORM(db.claim)
         participant_form = SQLFORM(db.participant)
         link_table = []
+        element_list = []
     if main_form.process().accepted:
         claim = main_form.vars.id
         redirect(URL('claim', 'enter/' + str(claim)))
@@ -102,7 +111,8 @@ def enter():
         response.flash = 'errors in participant submission'
     return {"main_form": main_form,
             "participant_form": participant_form,
-            "link_table": link_table}
+            "link_table": link_table,
+            "element_list": element_list}
 
 def get_args(req):
     if req.args(0):
@@ -142,6 +152,34 @@ def make_link_table(claim):
         result.append(item)
     return result
 
+def update_tool():
+    """Something to update dthe representation of participants"""
+    result = []
+    claims = db().select(db.claim.ALL, orderby=db.claim.id)
+    for claim in claims:
+        rows = db(db.participant2claim.claim == claim.id).select()
+        if len(rows) > 0:
+            participants = [row.participant for row in rows]
+            for participant in participants:
+                p_id = participant.id
+                elements = db(db.participant_element.participant == 
+                              participant.id).select()
+                if elements:
+                    pass
+                else:
+                    if participant.taxon:
+                        db.participant_element.insert(participant=p_id)
+                    if participant.anatomy:
+                        db.participant_element.insert(participant=p_id)
+                    if participant.substrate:
+                        db.participant_element.insert(participant=p_id)
+                result.append((p_id,len(elements))) 
+    return {'update_report': result }
+
+def row_count(rows):
+    count = 0
+    for row in rows:
+        count += 1
 
 def status_tool():
     """

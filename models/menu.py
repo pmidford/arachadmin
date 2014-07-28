@@ -41,6 +41,7 @@ response.menu = [
             URL('publication', 'status_tool', [])),
         ('Author Update Tool', False, URL('author', 'update_tool', [])),
         ('Claim Status Tool', False, URL('claim', 'status_tool', [])),
+        ('Claim Update Tool', False, URL('claim', 'update_tool', [])),
         ('Ontology Update Tool', False, URL('ontology', 'index', []))
     ])
 

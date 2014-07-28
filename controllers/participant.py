@@ -66,6 +66,7 @@ def element():
 
 
 def get_element_args(req):
+    """ """
     if req.args(0):
         element = req.args(0, cast=int)
     elif req.vars['element']:
@@ -74,5 +75,29 @@ def get_element_args(req):
         element = None
     return element
 
+
+INDIVIDUAL_ELEMENT = 3
+SOME_ELEMENT = 1
+ONLY_ELEMENT = 2
+
 def element2():
     """ """
+    index = get_element_args(request)
+    element = db.participant_element[index]
+    etype = element['type']
+    if etype == INDIVIDUAL_ELEMENT:
+        form = SQLFORM(db.pelement2individual, fields=['individual'])
+    elif (etype == SOME_ELEMENT) or (etype == ONLY_ELEMENT):
+        form = SQLFORM(db.pelement2term, fields=['term'])
+    else:
+        redirect(URL('element3/' + str(element)))
+    form.vars.element = element
+    if form.accepts(request,session):
+        link = form.vars.id
+        redirect(URL('element2/' + str(element)))
+    return {'form': form}
+
+
+def element3():
+    """ """
+    pass
