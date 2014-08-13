@@ -21,17 +21,23 @@
 <DIV class="row">
   <DIV class="foo">
   </DIV>
+  {{ele_count = len(element_list)}}
+  {{print "%s" % str(edge_list)}}
+  {{edge_count = len(edge_list)}}
   <SCRIPT>
     var width = 960;
     var height = 500;
 
-
     var graph = 
        {nodes: [
-         {atom: {{=element_list[0]}}, "size": 10},
-         {atom: {{=element_list[1]}}, "size": 10}
+         {{if ele_count>0:}} {atom: {{=XML(repr(element_list[0]))}}, "size": 10} {{pass}}
+         {{if ele_count>1:}} ,{atom: {{=XML(repr(element_list[1]))}}, "size": 10} {{pass}}
         ],
-       links: []
+       links: [
+         {{if edge_count>0:}} 
+            {"source": {{=edge_list[0][0]}}, "target": {{=edge_list[0][1]}}, "bond": 1} 
+            {{pass}}
+        ]
     }
 
     var old_graph = 

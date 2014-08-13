@@ -54,6 +54,8 @@ def enter():
     """
     response.files.append(URL('static/js','d3.js'))
     response.files.append(URL('static/css', 'd3test.css'))
+    element_list = []
+    edge_list = []
     claim_arg, participant_arg = get_args(request)
     if claim_arg and participant_arg:
         claim = db.claim(claim_arg)
@@ -61,22 +63,23 @@ def enter():
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
         participant_form = SQLFORM(db.participant, participant)
-        element_list = []
         elements = db(db.participant_element.participant == 
                       participant.id).select()
         if elements:
-            element_list = [element.id for element in elements]
+            element_ids = [element.id for element in elements]  
+            element_label = [process_p_element(element.id) for element in elements]
+            element_list = element_label
+            edge_list = [process_p_link(element.id,element_ids) for element in elements]
+            print "links = %s" % str(edge_list)
     elif claim_arg:
         claim = db.claim(claim_arg)
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
         participant_form = SQLFORM(db.participant)
-        element_list = []
     else:
         main_form = SQLFORM(db.claim)
         participant_form = SQLFORM(db.participant)
         link_table = []
-        element_list = []
     if main_form.process().accepted:
         claim = main_form.vars.id
         redirect(URL('claim', 'enter/' + str(claim)))
@@ -112,7 +115,8 @@ def enter():
     return {"main_form": main_form,
             "participant_form": participant_form,
             "link_table": link_table,
-            "element_list": element_list}
+            "element_list": element_list,
+            "edge_list": edge_list}
 
 def get_args(req):
     if req.args(0):
@@ -176,10 +180,31 @@ def update_tool():
                 result.append((p_id,len(elements))) 
     return {'update_report': result }
 
+
 def row_count(rows):
     count = 0
     for row in rows:
         count += 1
+
+
+def process_p_element(element_id):
+    terms = db(db.pelement2term.element == element_id).select()
+    if len(terms) > 0:
+        return "term"
+    individuals = db(db.pelement2individual.element == element_id).select()
+    if len(individuals) > 0:
+        return "individual"
+    return "Neither"
+
+
+def process_p_link(participant_id,id_list):
+    links = db(db.participant_link.child == 
+               participant_id).select()
+    return (0,1)
+    if len(links)>0:
+        return [(0,1)]  #fake return
+        # return [(links[0].child,links[0].parent)]
+    return None
 
 def status_tool():
     """
