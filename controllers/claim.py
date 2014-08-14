@@ -157,7 +157,7 @@ def make_link_table(claim):
     return result
 
 def update_tool():
-    """Something to update dthe representation of participants"""
+    """Something to update the representation of participants"""
     result = []
     claims = db().select(db.claim.ALL, orderby=db.claim.id)
     for claim in claims:
@@ -171,14 +171,25 @@ def update_tool():
                 if elements:
                     pass
                 else:
+                    tax_ele_id = None
+                    ana_ele_id = None
+                    sub_ele_id = None
                     if participant.taxon:
-                        db.participant_element.insert(participant=p_id)
+                        tax_ele_id = insert_participant_element(p_id)
+                        print "q = %s" % participant.quantification
+                        if (participant.quantification == "some"):
+                            db.pelement2term.insert(element=tax_ele_id,
+                                                    term=participant.taxon)
                     if participant.anatomy:
-                        db.participant_element.insert(participant=p_id)
+                        ana_ele_id = insert_participant_element(p_id)
                     if participant.substrate:
-                        db.participant_element.insert(participant=p_id)
+                        sub_ele_id = insert_participant_element(p_id)
                 result.append((p_id,len(elements))) 
     return {'update_report': result }
+
+
+def insert_participant_element(participant_id):
+    return db.participant_element.insert(participant=participant_id)
 
 
 def row_count(rows):
