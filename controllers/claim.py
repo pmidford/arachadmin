@@ -67,8 +67,9 @@ def enter():
                       participant.id).select()
         if elements:
             element_ids = [element.id for element in elements]  
-            element_label = [process_p_element(element.id) for element in elements]
-            element_list = element_label
+            element_labels = [process_p_element(element.id) for element in elements]
+            print "%s; %s" % (str(element_ids),str(element_labels))
+            element_list = element_labels
             edge_list = [process_p_link(element.id,element_ids) for element in elements]
             print "links = %s" % str(edge_list)
     elif claim_arg:
@@ -159,6 +160,11 @@ def make_link_table(claim):
 def update_tool():
     """Something to update the representation of participants"""
     result = []
+    (some_code,
+     only_code,
+     individual_code,
+     intersection_code,
+     union_code) = get_participant_codes()
     claims = db().select(db.claim.ALL, orderby=db.claim.id)
     for claim in claims:
         rows = db(db.participant2claim.claim == claim.id).select()
@@ -168,28 +174,51 @@ def update_tool():
                 p_id = participant.id
                 elements = db(db.participant_element.participant == 
                               participant.id).select()
-                if elements:
+                if len(elements)>0:
                     pass
                 else:
                     tax_ele_id = None
                     ana_ele_id = None
                     sub_ele_id = None
                     if participant.taxon:
-                        tax_ele_id = insert_participant_element(p_id)
                         print "q = %s" % participant.quantification
-                        if (participant.quantification == "some"):
+                        if (participant.quantification == 'some'):
+                            tax_ele_id = insert_participant_element(p_id,some_code)
+                            db.pelement2term.insert(element=tax_ele_id,
+                                                    term=participant.taxon)
+                        elif (participant.quantification == 'individual'):
+                            tax_ele_id = insert_participant_element(p_id,individual_code)
                             db.pelement2term.insert(element=tax_ele_id,
                                                     term=participant.taxon)
                     if participant.anatomy:
-                        ana_ele_id = insert_participant_element(p_id)
+                        print "q = %s" % participant.quantification
+                        if (participant.quantification == "some"):
+                            ana_ele_id = insert_participant_element(p_id,some_code)
+                            db.pelement2term.insert(element=ana_ele_id,
+                                                    term=participant.anatomy)
                     if participant.substrate:
-                        sub_ele_id = insert_participant_element(p_id)
+                        print "q = %s" % participant.quantification
+                        if (participant.quantification == "some"):
+                            sub_ele_id = insert_participant_element(p_id,some_code)
+                            db.pelement2term.insert(element=sub_ele_id,
+                                                    term=participant.anatomy)
                 result.append((p_id,len(elements))) 
     return {'update_report': result }
 
+def get_participant_codes():
+    some_code = get_participant_code('some_term')
+    only_code = get_participant_code('only_term')
+    individual_code = get_participant_code('individual')
+    intersection_code = get_participant_code('intersection')
+    union_code = get_participant_code('union')
+    return (some_code,only_code,individual_code,intersection_code,union_code)
 
-def insert_participant_element(participant_id):
-    return db.participant_element.insert(participant=participant_id)
+def get_participant_code(type_str):
+    return db(db.participant_type.label == type_str).select().first().id
+
+
+def insert_participant_element(participant_id,type_id):
+    return db.participant_element.insert(participant=participant_id,type=type_id)
 
 
 def row_count(rows):
