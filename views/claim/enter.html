@@ -30,8 +30,8 @@
 
     var graph = 
        {nodes: [
-         {{if ele_count>0:}} {atom: {{=XML(repr(element_list[0]))}}, "size": 10} {{pass}}
-         {{if ele_count>1:}} ,{atom: {{=XML(repr(element_list[1]))}}, "size": 10} {{pass}}
+         {{if ele_count>0:}} {atom: {{=XML(repr(element_list[0]))}}, "size": {{=len(element_list[0])}} } {{pass}}
+         {{if ele_count>1:}} ,{atom: {{=XML(repr(element_list[1]))}}, "size": {{=len(element_list[1])}} } {{pass}}
         ],
        links: [
          {{if edge_count>0:}} 
@@ -87,8 +87,8 @@
         .size([width, height])
         .charge(-400)
         .linkDistance(function(d) { 
-                         return radius(d.source.size) + 
-                                 radius(d.target.size) + 20; });
+                         return radius(d.source.size*2) + 
+                                 radius(d.target.size*2) + 40; });
 
     
     force.nodes(graph.nodes)
@@ -132,10 +132,10 @@
             .attr("y2", function(d) { return d.target.y; });
 
         node.selectAll("rect")
-            .attr("x", function(d) {return d.x - 15; })
-            .attr("y", function(d) {return d.y - 15; })
-            .attr("height", 30)
-            .attr("width", 30);
+            .attr("x", function(d) {return d.x - 3*d.size; })
+            .attr("y", function(d) {return d.y - 10; })
+            .attr("height", function(d) {return 20; })
+            .attr("width", function(d) {return 6*d.size; })
         node.selectAll("text")
             .attr("x", function(d) { return d.x; })
             .attr("y", function(d) { return d.y; });
