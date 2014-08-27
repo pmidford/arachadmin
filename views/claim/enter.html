@@ -30,49 +30,16 @@
 
     var graph = 
        {nodes: [
-         {{if ele_count>0:}} {atom: {{=XML(repr(element_list[0]))}}, "size": {{=len(element_list[0])}} } {{pass}}
-         {{if ele_count>1:}} ,{atom: {{=XML(repr(element_list[1]))}}, "size": {{=len(element_list[1])}} } {{pass}}
+         {{if ele_count>0:}} {label: {{=XML(repr(element_list[0]))}}, "size": {{=len(element_list[0])}} } {{pass}}
+         {{if ele_count>1:}} ,{label: {{=XML(repr(element_list[1]))}}, "size": {{=len(element_list[1])}} } {{pass}}
         ],
        links: [
          {{if edge_count>0:}} 
-            {"source": {{=edge_list[0][0]}}, "target": {{=edge_list[0][1]}}, "bond": 1} 
+            {"source": {{=edge_list[0][0]}}, "target": {{=edge_list[0][1]}} } 
             {{pass}}
         ]
     }
 
-    var old_graph = 
-       {nodes: [
-          {atom: "C", "size": 12},
-          {atom: "C", "size": 12},
-          {atom: "C", "size": 12},
-          {atom: "N", "size": 14},
-          {atom: "H", "size": 1},
-          {atom: "O", "size": 16},
-          {atom: "O", "size": 16},
-          {atom: "H", "size": 1},
-          {atom: "H", "size": 1},
-          {atom: "H", "size": 1},
-          {atom: "H", "size": 1},
-          {atom: "H", "size": 1},
-          {atom: "H", "size": 1}
-         ],
-        links: [
-          {"source": 0, "target": 1, "bond": 1},
-          {"source": 1, "target": 2, "bond": 1},
-          {"source": 1, "target": 3, "bond": 1},
-          {"source": 2, "target": 5, "bond": 2},
-          {"source": 2, "target": 6, "bond": 1},
-          {"source": 1, "target": 4, "bond": 1},
-          {"source": 3, "target": 10, "bond": 1},
-          {"source": 3, "target": 11, "bond": 1},
-          {"source": 0, "target": 7, "bond": 1},
-          {"source": 0, "target": 8, "bond": 1},
-          {"source": 0, "target": 9, "bond": 1},
-          {"source": 5, "target": 12, "bond": 1},
-         ]
-    };
-
-    var color = d3.scale.category20();
 
     var radius = d3.scale.sqrt()
         .range([0, 6]);
@@ -103,26 +70,23 @@
 
     link.append("line")
         .style("stroke-width", function(d) { 
-                                   return (d.bond * 2 - 1) * 2 + "px"; 
+                                   return "2px"; 
                                 });
-
-    link.filter(function(d) { return  d.bond  > 1; })
-        .append("line")
-        .attr("class", "separator");
 
     var node = svg.selectAll(".node")
          .data(graph.nodes)
          .enter().append("g")
          .attr("class", "node")
+         .attr("id", function(d) {return d.label; })
          .call(force.drag);
 
     node.append("rect")
-        .style("fill", function(d) { return color(d.atom); });
+        .style("fill", "lightblue");
 
     node.append("text")
         .attr("dy", ".35em")
         .attr("text-anchor", "middle")
-        .text(function(d) {return d.atom; });
+        .text(function(d) {return d.label; });
 
     function tick() {
         link.selectAll("line")
@@ -142,6 +106,8 @@
                   
    }
 
+    $(document).ready(function(){
+      $("#leg").click(function(){alert("foo");})});
     
   </SCRIPT>
 </DIV>
