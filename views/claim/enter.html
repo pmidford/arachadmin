@@ -3,7 +3,10 @@
 <DIV class="row">
    <DIV class="span6">
        <h3>Claim/Observation form</h3>
-      {{=main_form}}
+       {{=main_form}}
+       {{=A(T("Enter New Claim/Observation"), _href=URL('arachadmin','claim','enter'), _class='btn',
+            _style='margin-top: 1em;')}}
+       <br/>
        <h3>Table of associated participants</h3>
       {{headers=['claim','participant','index']}}
       {{=TABLE(
@@ -16,27 +19,40 @@
    <DIV class="span6">
        <h3>Participant form</h3>
       {{=participant_form}}
+       <DIV class="pelement">
+          <p id="active_element">
+	    Element Editor here
+          </p>
+       </DIV>
    </DIV>
 </DIV>
 <DIV class="row">
   <DIV class="foo">
   </DIV>
   {{ele_count = len(element_list)}}
-  {{print "%s" % str(edge_list)}}
   {{edge_count = len(edge_list)}}
+  {{def node_label(index):}}
+      {label: {{=XML(repr(element_list[index]))}}, size:{{=len(element_list[index])}} }
+  {{return}}
+  {{def edge_draw(index):}}
+      {source: {{=edge_list[index][0]}}, target: {{=edge_list[index][1]}} }
+  {{return}} 
   <SCRIPT>
     var width = 960;
     var height = 500;
 
     var graph = 
        {nodes: [
-         {{if ele_count>0:}} {label: {{=XML(repr(element_list[0]))}}, "size": {{=len(element_list[0])}} } {{pass}}
-         {{if ele_count>1:}} ,{label: {{=XML(repr(element_list[1]))}}, "size": {{=len(element_list[1])}} } {{pass}}
+         {{for count in xrange(ele_count):}}
+           {{node_label(count)}}
+           {{if count<(ele_count-1):}} , {{pass}}
+           {{pass}}
         ],
        links: [
-         {{if edge_count>0:}} 
-            {"source": {{=edge_list[0][0]}}, "target": {{=edge_list[0][1]}} } 
-            {{pass}}
+         {{for count in xrange(edge_count):}}
+           {{edge_draw(count)}}
+           {{if count<(edge_count-1):}} , {{pass}}
+           {{pass}}
         ]
     }
 
@@ -69,9 +85,7 @@
          .attr("class", "link");
 
     link.append("line")
-        .style("stroke-width", function(d) { 
-                                   return "2px"; 
-                                });
+        .style("stroke-width", function(d) { return "2px"; });
 
     var node = svg.selectAll(".node")
          .data(graph.nodes)
@@ -111,7 +125,3 @@
     
   </SCRIPT>
 </DIV>
-<br/>
-{{=A(T("Enter New Claim/Observation"), _href=URL('arachadmin','claim','enter'), _class='btn',
-     _style='margin-top: 1em;')}}
-<br/>
