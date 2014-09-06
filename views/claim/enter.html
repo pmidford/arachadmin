@@ -37,6 +37,11 @@
   {{def edge_draw(index):}}
       {source: {{=edge_list[index][0]}}, target: {{=edge_list[index][1]}} }
   {{return}} 
+  {{def gen_click(index):}}
+      $({{=XML(repr('#' + element_list[index]))}})
+        .click(function(){ajax('{{=URL("testecho")}}' , '', 'active_element'); })
+  {{return}}
+
   <SCRIPT>
     var width = 960;
     var height = 500;
@@ -121,7 +126,13 @@
    }
 
     $(document).ready(function(){
-      $("#leg").click(function(){alert("foo");})});
+       {{for count in xrange(ele_count):}}
+           {{gen_click(count)}}
+           {{if count<(ele_count-1):}} , {{pass}}
+           {{pass}}
+
+
+    })
     
   </SCRIPT>
 </DIV>

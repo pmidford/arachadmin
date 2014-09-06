@@ -330,3 +330,7 @@ def view_participant():
 
 def edit_participant():
     """a stub for now"""
+
+# a test stub
+def testecho():
+    return 'testecho'
