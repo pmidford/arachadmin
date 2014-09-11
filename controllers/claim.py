@@ -171,9 +171,7 @@ def update_tool():
                 p_id = participant.id
                 elements = db(db.participant_element.participant == 
                               participant.id).select()
-                if len(elements)>0:
-                    pass
-                else:
+                if len(elements) == 0:
                     tax_id = None
                     ana_id = None
                     sub_id = None
@@ -197,6 +195,7 @@ def update_tool():
                         if (participant.quantification == "some"):
                             ana_id = insert_participant_element(p_id, some_code)
                             insert_element2term_map(ana_id, participant.anatomy)
+                            insert_participant_link(tax_id,ana_id,1) # should be term_id for part_of
                         elif (participant.quantification == 'individual'):
                             ana_label = get_term_label(participant.anatomy)
                             ind_label = ana_label + " of " + participant.label
@@ -209,6 +208,7 @@ def update_tool():
                                                         claim.narrative)
                             ana_id = insert_participant_element(p_id,individual_code)
                             insert_element2indiv_map(ana_id, ind)
+                            insert_participant_link(tax_id,ana_id,1) # should be term_id for part_of
                     if participant.substrate:  # assume for now that substrates are always some expressions
                         print "substrate assumes some quantified"
                         sub_id = insert_participant_element(p_id,some_code)
@@ -235,7 +235,7 @@ def get_term_label(term_id):
 
 
 def insert_participant_element(participant_id, type_id):
-    return db.participant_element.insert(participant=participant_id,type=type_id)
+    return db.participant_element.insert(participant=participant_id, type=type_id)
 
 
 def insert_element2term_map(ele_id,term_id):
@@ -244,6 +244,12 @@ def insert_element2term_map(ele_id,term_id):
 
 def insert_element2indiv_map(ele_id,indiv_id):
     db.pelement2individual.insert(element=ele_id, individual=indiv_id)
+
+
+def insert_participant_link(child_id, parent_id, predicate_id):
+    db.participant_link.insert(child=child_id,
+                               parent=parent_id,
+                               predicate=predicate_id)
 
 
 def lookup_individual(label, term, narrative):
@@ -299,9 +305,13 @@ def process_p_element(element_id):
 def process_p_link(participant_id,id_list):
     links = db(db.participant_link.child == 
                participant_id).select()
-    return (0,1)
     if len(links)>0:
-        return [(0,1)]  #fake return
+        for link in links:
+            child = link.child
+            parent = link.parent
+            child_index = id_list.index(child)
+            parent_index = id_list.index(parent)
+        return (child_index, parent_index)  #fake return
         # return [(links[0].child,links[0].parent)]
     return None
 
