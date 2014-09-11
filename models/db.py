@@ -143,6 +143,19 @@ db.define_table('authority',
                 format='%(name)s',
                 migrate=False)
 
+db.define_table('property',
+                Field('source_id', 'string', length=256),
+                Field('authority',
+                      'reference authority',
+                      ondelete='NO ACTION'),
+                Field('label', 'string', length=64),
+                Field('generated_id',
+                      'string',
+                      length=64,
+                      writable=False),
+                Field('comment','string', length=512),
+                format='%(label)s',
+                migrate=True)
 
 db.define_table('term',
                 Field('source_id', 'string'),
