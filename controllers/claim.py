@@ -313,7 +313,8 @@ def process_p_link(participant_id,id_list):
             parent_index = id_list.index(parent)
         return (child_index, parent_index)  #fake return
         # return [(links[0].child,links[0].parent)]
-    return None
+        return (0, 1)
+    return (0, 1)  # None
 
 def status_tool():
     """
