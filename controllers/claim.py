@@ -65,8 +65,10 @@ def enter():
         participant_form = SQLFORM(db.participant, participant)
         elements = db(db.participant_element.participant == 
                       participant.id).select()
+        behavior = db(db.term.id == claim.behavior_term).select().first()
         if elements:
-            (element_list, edge_list) = process_elements_and_links(elements)
+            (element_list, edge_list) = process_elements_and_links(behavior, 
+                                                                   elements)
     elif claim_arg:
         claim = db.claim(claim_arg)
         link_table = make_link_table(claim)
@@ -162,6 +164,7 @@ def update_tool():
      individual_code,
      intersection_code,
      union_code) = get_participant_codes()
+    (part_of, has_participant) = get_predicates()
     claims = db().select(db.claim.ALL, orderby=db.claim.id)
     for claim in claims:
         rows = db(db.participant2claim.claim == claim.id).select()
@@ -176,7 +179,6 @@ def update_tool():
                     ana_id = None
                     sub_id = None
                     if participant.taxon:
-                        print "q = %s" % participant.quantification
                         if (participant.quantification == 'some'):
                             tax_id = insert_participant_element(p_id,some_code)
                             insert_element2term_map(tax_id, participant.taxon)
@@ -191,11 +193,10 @@ def update_tool():
                             tax_id = insert_participant_element(p_id,individual_code)
                             insert_element2indiv_map(tax_id,ind)
                     if participant.anatomy:
-                        print "q = %s" % participant.quantification
                         if (participant.quantification == "some"):
                             ana_id = insert_participant_element(p_id, some_code)
                             insert_element2term_map(ana_id, participant.anatomy)
-                            insert_participant_link(tax_id,ana_id,1) # should be term_id for part_of
+                            insert_participant_link(tax_id,ana_id,part_of.id)
                         elif (participant.quantification == 'individual'):
                             ana_label = get_term_label(participant.anatomy)
                             ind_label = ana_label + " of " + participant.label
@@ -208,7 +209,7 @@ def update_tool():
                                                         claim.narrative)
                             ana_id = insert_participant_element(p_id,individual_code)
                             insert_element2indiv_map(ana_id, ind)
-                            insert_participant_link(tax_id,ana_id,1) # should be term_id for part_of
+                            insert_participant_link(tax_id, ana_id, part_of.id)
                     if participant.substrate:  # assume for now that substrates are always some expressions
                         print "substrate assumes some quantified"
                         sub_id = insert_participant_element(p_id,some_code)
@@ -234,6 +235,16 @@ def get_term_label(term_id):
     return db(db.term.id == term_id).select().first().label
 
 
+def get_predicates():
+    part_of_pred = get_predicate('http://purl.obolibrary.org/obo/BFO_0000050')
+    participates_in_pred = get_predicate('http://purl.obolibrary.org/obo/BFO_0000056')
+    return (part_of_pred, participates_in_pred)
+
+
+def get_predicate(uri):
+    return db(db.property.source_id == uri).select().first()
+
+
 def insert_participant_element(participant_id, type_id):
     return db.participant_element.insert(participant=participant_id, type=type_id)
 
@@ -246,10 +257,12 @@ def insert_element2indiv_map(ele_id,indiv_id):
     db.pelement2individual.insert(element=ele_id, individual=indiv_id)
 
 
-def insert_participant_link(child_id, parent_id, predicate_id):
+def insert_participant_link(child_id, parent_id, property_id):
     db.participant_link.insert(child=child_id,
                                parent=parent_id,
-                               predicate=predicate_id)
+                               property=property_id)
+
+
 
 
 def lookup_individual(label, term, narrative):
@@ -278,13 +291,21 @@ def insert_individual(label, term, narrative):
     return ind
 
 
-def process_elements_and_links(elements):
+def process_elements_and_links(behavior, elements):
+    behavior_id = behavior.id
+    behavior_label = behavior.label
     element_ids = [element.id for element in elements]  
     element_labels = [process_p_element(element.id) for element in elements]
-    print "%s; %s" % (str(element_ids),str(element_labels))
+    element_ids.insert(0, behavior_id)
+    element_labels.insert(0, behavior_label)
+    print "{}; {}".format(str(element_ids),str(element_labels))
     element_list = element_labels
-    edge_list = [process_p_link(element.id,element_ids) for element in elements]
-    print "links = %s" % str(edge_list)
+    edge_list = []
+    for element in elements:
+        edges = process_p_link(element.id, element_ids)
+        for edge in edges:
+            edge_list.append(edge)
+    print "links = {}".format(str(edge_list))
     return (element_list, edge_list)
 
 
@@ -305,16 +326,15 @@ def process_p_element(element_id):
 def process_p_link(participant_id,id_list):
     links = db(db.participant_link.child == 
                participant_id).select()
-    if len(links)>0:
-        for link in links:
-            child = link.child
-            parent = link.parent
-            child_index = id_list.index(child)
-            parent_index = id_list.index(parent)
-        return (child_index, parent_index)  #fake return
-        # return [(links[0].child,links[0].parent)]
-        return (0, 1)
-    return (0, 1)  # None
+    result = []
+    for link in links:
+        child = link.child
+        parent = link.parent
+        child_index = id_list.index(child)
+        parent_index = id_list.index(parent)
+        result.append((child_index, parent_index))
+    return result
+
 
 def status_tool():
     """

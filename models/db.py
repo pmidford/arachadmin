@@ -191,23 +191,21 @@ db.define_table('participant_type',
                 migrate=False)
 
 db.define_table('participant_element',
-                Field('type', 
+                Field('type',
                       'reference participant_type',
                       requires=IS_EMPTY_OR(IS_IN_DB(db,
                                                     'participant_type.id',
                                                     '%(label)s'))),
 
-                Field('participant', 
+                Field('participant',
                       'reference participant',
                       ondelete='NO ACTION'),
                 migrate=False)
-                
-
 
 db.define_table('participant_link',
                 Field('child', 'reference participant_element'),
                 Field('parent', 'reference participant_element'),
-                Field('predicate', 'reference term', ondelete='NO ACTION'),
+                Field('property', 'reference property', ondelete='NO ACTION'),
                 migrate=False)
 
 db.define_table('pelement2term',
