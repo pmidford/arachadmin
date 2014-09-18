@@ -104,4 +104,11 @@ def element3():
 
 
 def pelement():
-    return dict()
+    fields=[Field('type', 
+                  'reference particpant_type',
+                  required=IS_EMPTY_OR(IS_IN_DB(db,'participant_type.id','%(label)s'))), 
+            Field('property', 'reference property' )]
+    form = SQLFORM.factory(*fields)
+    if form.accepts(request.vars, session):
+        reponse.flash = "success"
+    return dict(form=form)
