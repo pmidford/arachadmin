@@ -46,6 +46,7 @@ def check_modified():
     ontologies = db().select(db.ontology_source.ALL)
     for ont in ontologies:
         source_update = check_date(ont.source_url)
+        print "Found timestr {0}".format(source_update)
         if source_update != '':
             source_update_struct = time.strptime(source_update.rstrip(),
                                                  UPDATE_FORMAT)

@@ -163,6 +163,12 @@ def load_from_url(ont_url, processor, config, app_name):
     processor - function to pass over the list of terms returned by the parser
     config - holds configuration object (to find cache and root if needed
     app_name - used to build the specification directory for the cache
+    >>> ont = 'http://purl.obolibrary.org/obo/ro.owl'
+    >>> proc = build_ontology_tree
+    >>> root = ARACHNID_NODE
+    >>> app = 'arachadmin'
+    >>> load_from_url(ont, proc, root, app)
+    []
     """
     cache = ("applications/%s/" % app_name) + config.get('ontology', 'cache')
     taxonomy_root = config.get('ontology', 'taxonomy_root')
@@ -254,6 +260,10 @@ def build_ontology_tree(terms, root=None, label_filter=None):
 
 
 def simple_builder(terms, root=None):
+    """
+    >>> simple_builder(['a'])
+    ['a']
+    """
     return terms
 
 
@@ -278,22 +288,31 @@ def load_from_obo(ontology_name, processor, root=None):
 
 
 def demo():
-    """For testing the owl parser"""
+    """
+    For testing the owl parser
+    """
     load_from_obo('ncbitaxon', build_ontology_tree, root=ARACHNID_NODE)
 
 
 def check_date(urlstr):
     """
     Opens a connection, tries to retrieve a last-modified in the headers
+
+    >>> check_date('http://purl.obolibrary.org/obo/bfo.owl')
+    'Fri, 16 May 2014 14:46:38 GMT'
+
     """
     r = requests.get(urlstr)
     for header in r.headers:
         if header == 'last-modified':
             timestr = r.headers[header]
-            print "Found timestr %s" % timestr
             r.close()
             return timestr
     else:
         print "No timestamp found in %s" % str(r.headers)
         r.close()
         return ''
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
