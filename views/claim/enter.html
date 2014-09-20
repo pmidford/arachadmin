@@ -39,7 +39,7 @@
   {{return}} 
   {{def gen_click(index):}}
       $({{=XML(repr('#' + element_list[index]))}})
-        .click(function(){ajax('{{=URL("testecho")}}' , '', 'active_element'); })
+        .click(function(){ajax('{{=URL("testecho",args=element_list[index])}}' , '', 'active_element'); })
   {{return}}
 
   <SCRIPT>

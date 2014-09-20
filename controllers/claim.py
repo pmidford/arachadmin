@@ -305,8 +305,9 @@ def insert_individual(label, term, narrative):
 
 
 def process_elements_and_links(behavior, elements):
+    """this generates lists of elements and edges"""
     behavior_id = behavior.id
-    behavior_label = behavior.label
+    behavior_label = reduce_label(behavior.label)
     element_ids = [element.id for element in elements]  
     element_labels = [process_p_element(element.id) for element in elements]
     element_ids.insert(0, behavior_id)
@@ -327,17 +328,19 @@ def process_p_element(element_id):
     if len(term_ids) > 0:
         term_id = term_ids[0].term
         term = db(db.term.id == term_id).select().first()
-        label_words = term.label.split(' ')
-        reduced_label = '_'.join(label_words)
-        return reduced_label
+        return reduce_label(term.label)
     i_ids = db(db.pelement2individual.element == element_id).select()
     if len(i_ids) > 0:
         i_id = i_ids[0].individual
         individual = db(db.individual.id == i_id).select().first()
-        label_words = individual.label.split(' ')
-        reduced_label = '_'.join(label_words)
-        return reduced_label
+        return reduce_label(individual.label)
     return "Neither"
+
+
+def reduce_label(label):
+    """returns label with spaces converted to underscores"""
+    words = label.split(' ')
+    return '_'.join(words)
 
 
 def process_p_link(participant_id,id_list):
@@ -381,4 +384,5 @@ def edit_participant():
 
 # a test stub
 def testecho():
-    return 'testecho'
+    s = request.args[0]
+    return 'testecho: ' + s
