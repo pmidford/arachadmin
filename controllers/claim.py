@@ -307,11 +307,11 @@ def insert_individual(label, term, narrative):
 def process_elements_and_links(behavior, elements):
     """this generates lists of elements and edges"""
     behavior_id = behavior.id
-    behavior_label = reduce_label(behavior.label)
+    behavior_entry = (reduce_label(behavior.label),-1)
     element_ids = [element.id for element in elements]  
     element_labels = [process_p_element(element.id) for element in elements]
     element_ids.insert(0, behavior_id)
-    element_labels.insert(0, behavior_label)
+    element_labels.insert(0, behavior_entry)
     print "{}; {}".format(str(element_ids),str(element_labels))
     element_list = element_labels
     edge_list = []
@@ -328,12 +328,12 @@ def process_p_element(element_id):
     if len(term_ids) > 0:
         term_id = term_ids[0].term
         term = db(db.term.id == term_id).select().first()
-        return reduce_label(term.label)
+        return (reduce_label(term.label), element_id)
     i_ids = db(db.pelement2individual.element == element_id).select()
     if len(i_ids) > 0:
         i_id = i_ids[0].individual
         individual = db(db.individual.id == i_id).select().first()
-        return reduce_label(individual.label)
+        return (reduce_label(individual.label), element_id)
     return "Neither"
 
 

@@ -32,14 +32,14 @@
   {{ele_count = len(element_list)}}
   {{edge_count = len(edge_list)}}
   {{def node_label(index):}}
-      {label: {{=XML(repr(element_list[index]))}}, size:{{=len(element_list[index])}} }
+      {label: {{=XML(repr(element_list[index][0]))}}, size:{{=len(element_list[index][0])}} }
   {{return}}
   {{def edge_draw(index):}}
       {source: {{=edge_list[index][0]}}, target: {{=edge_list[index][1]}} }
   {{return}} 
   {{def gen_click(index):}}
-      $({{=XML(repr('#' + element_list[index]))}})
-        .click(function(){ajax('{{=URL("testecho",args=element_list[index])}}' , '', 'active_element'); })
+      $({{=XML(repr('#' + element_list[index][0]))}})
+        .click(function(){ajax('{{=URL("testecho",args=element_list[index][1])}}' , '', 'active_element'); })
   {{return}}
 
   <SCRIPT>
