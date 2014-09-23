@@ -56,12 +56,13 @@ def status_tool():
     publications = db().select(db.publication.ALL,
                                orderby=db.publication.author_list)
     result = []
-    for publication in publications:
-        issues = publication_tools.issues_list(publication, db)
+    for pub in publications:
+        issues = publication_tools.issues_list(pub, db)
         if issues:
-            pub_cit = publication_tools.make_citation(publication)
+            pub_cit = publication_tools.make_citation(pub.author_list,
+                                                      pub.publication_year)
             for issue in issues:
-                pub_item = (pub_cit, issues, publication.id)
+                pub_item = (pub_cit, issues, pub.id)
                 result.append(pub_item)
     return {"report": result}
 

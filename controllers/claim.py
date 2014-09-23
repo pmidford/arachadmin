@@ -1,5 +1,6 @@
 # coding: utf8
-
+"""Controller for claims (statements about observed or generalized 
+occurances of behavior)"""
 
 def index():
     """
@@ -62,11 +63,11 @@ def enter():
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
         participant_form = SQLFORM(db.participant, participant)
-        elements = db(db.participant_element.participant == 
+        elements = db(db.participant_element.participant ==
                       participant.id).select()
         behavior = db(db.term.id == claim.behavior_term).select().first()
         if elements:
-            (element_list, edge_list) = process_elements_and_links(behavior, 
+            (element_list, edge_list) = process_elements_and_links(behavior,
                                                                    elements)
     elif claim_arg:
         claim = db.claim(claim_arg)
@@ -129,13 +130,13 @@ def get_args(req):
         participant = int(req.vars['participant'])
     else:
         participant = None
-    return (claim,participant)
+    return (claim, participant)
 
 
 def add_d3_files():
     """adds files related to d3 to the list that is loaded with the entry
     page.  Needed since d3 is used for element display."""
-    response.files.append(URL('static/js','d3.js'))
+    response.files.append(URL('static/js', 'd3.js'))
     response.files.append(URL('static/css', 'd3test.css'))
 
 
@@ -324,6 +325,9 @@ def process_elements_and_links(behavior, elements):
 
 
 def process_p_element(element_id):
+    """
+    """
+
     term_ids = db(db.pelement2term.element == element_id).select()
     if len(term_ids) > 0:
         term_id = term_ids[0].term
@@ -344,6 +348,9 @@ def reduce_label(label):
 
 
 def process_p_link(participant_id,id_list):
+    """returns list of pairs of child and parent elements at ends of link; 
+       these are coded by their position in the id_list, which seems to
+       be what the d3 code wants to see"""
     links = db(db.participant_link.child == 
                participant_id).select()
     result = []
@@ -384,5 +391,6 @@ def edit_participant():
 
 # a test stub
 def testecho():
-    s = request.args[0]
-    return 'testecho: ' + s
+    """called with the id of participant_element"""
+    participant_id = request.args[0]
+    return 'testecho: ' + participant_id

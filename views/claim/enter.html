@@ -21,7 +21,6 @@
       {{=participant_form}}
        <DIV class="pelement">
           <p id="active_element">
-	    {{=LOAD('participant','pelement.load',ajax=True)}}
           </p>
        </DIV>
    </DIV>
@@ -39,7 +38,7 @@
   {{return}} 
   {{def gen_click(index):}}
       $({{=XML(repr('#' + element_list[index][0]))}})
-        .click(function(){ajax('{{=URL("testecho",args=element_list[index][1])}}' , '', 'active_element'); })
+        .click(function(){ajax("{{=URL('participant','pelement.load',args=element_list[index][1])}}" , '', 'active_element');}) 
   {{return}}
 
   <SCRIPT>
@@ -130,7 +129,7 @@
            {{gen_click(count)}}
            {{if count<(ele_count-1):}} , {{pass}}
            {{pass}}
-
+        ;
 
     })
     
