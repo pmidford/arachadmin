@@ -141,12 +141,12 @@ def update_ontology(ont, type_name, config, app_name):
     terms = []
     object_properties = []
     if type_name == 'NCBI taxonomy':  # check symbolically
-        (terms, object_properties) = load_from_url(source_url,
+        (terms, object_properties) = load_ontology(source_url,
                                                    build_ontology_tree,
                                                    config,
                                                    app_name)
     elif type_name == 'OWL ontology':
-        (terms, object_properties) = load_from_url(source_url, 
+        (terms, object_properties) = load_ontology(source_url, 
                                                    simple_builder, 
                                                    config, 
                                                    app_name)
@@ -155,7 +155,7 @@ def update_ontology(ont, type_name, config, app_name):
     return (terms, object_properties)
 
 
-def load_from_url(ont_url, processor, config, app_name):
+def load_ontology(ont_url, processor, config, app_name):
     """
     opens the url, parses the stream, then postprocesses
     (e.g., taxonomy filtering)
@@ -163,21 +163,25 @@ def load_from_url(ont_url, processor, config, app_name):
     processor - function to pass over the list of terms returned by the parser
     config - holds configuration object (to find cache and root if needed
     app_name - used to build the specification directory for the cache
-    >>> ont = 'http://purl.obolibrary.org/obo/ro.owl'
-    >>> proc = build_ontology_tree
-    >>> root = ARACHNID_NODE
-    >>> app = 'arachadmin'
-    >>> load_from_url(ont, proc, root, app)
-    []
+    """
+    local_file = cache_ontology(ont_url, config, app_name)
+    return load_locally(local_file, processor, taxonomy_root)
+
+
+def cache_ontology(ont_url, config, app_name):
+    """
     """
     cache = ("applications/%s/" % app_name) + config.get('ontology', 'cache')
-    taxonomy_root = config.get('ontology', 'taxonomy_root')
     print "cache is %s" % cache
-    print "root is %s" % taxonomy_root
-    local_filename = copy_to_cache(ont_url, cache)
-    ontology_source = open(local_filename)
+    local_file = open(copy_to_cache(ont_url, cache))
+    return local_file
+    
+
+def load_locally(local_file, processor, taxonomy_root):
     parser = etree.XMLParser(target=ClassTarget())
-    (classes, object_properties) = etree.parse(ontology_source, parser)
+    (classes, object_properties) = etree.parse(local_file, parser)
+    taxonomy_root = config.get('ontology', 'taxonomy_root')
+    print "root is %s" % taxonomy_root
     return (processor(classes, taxonomy_root), object_properties)
 
 
@@ -283,17 +287,6 @@ def simple_label_filter(term):
     return True
 
 
-def load_from_obo(ontology_name, processor, root=None):
-    load_from_url(OBO_PURL_PREFIX+ontology_name+OWL_SUFFIX, processor, root)
-
-
-def demo():
-    """
-    For testing the owl parser
-    """
-    load_from_obo('ncbitaxon', build_ontology_tree, root=ARACHNID_NODE)
-
-
 def check_date(urlstr):
     """
     Opens a connection, tries to retrieve a last-modified in the headers
@@ -314,5 +307,15 @@ def check_date(urlstr):
         return ''
 
 if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+    import argparse
+    parser = argparse.ArgumentParser(description='check for testing option')
+    parser.add_argument("--test", help="activate testing", action="store_true")
+    parser.add_argument("--verbose", help="verbose test output", action="store_true")
+    args = parser.parse_args()
+    if args.test:
+        import doctest
+        if args.verbose:
+            doctest.testmod(verbose=True)
+        else:
+            doctest.testmod(verbose=False)
+    

@@ -57,5 +57,15 @@ def more_complete_name(last1,given1,last2,given2):
 
 
 if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+    import argparse
+    parser = argparse.ArgumentParser(description='check for testing option')
+    parser.add_argument("--test", help="activate testing", action="store_true")
+    parser.add_argument("--verbose", help="verbose test output", action="store_true")
+    args = parser.parse_args()
+    if args.test:
+        import doctest
+        if args.verbose:
+            doctest.testmod(verbose=True)
+        else:
+            doctest.testmod(verbose=False)
+
