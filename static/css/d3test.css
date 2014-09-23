@@ -1,0 +1,26 @@
+div.bar{
+	background-color: teal;
+	display: inline-block;
+	height: 75px;
+	width: 20px;
+	margin-right: 2px;
+}
+
+.link line {
+  stroke: #696969;
+}
+
+.link line.separator {
+  stroke: #fff;
+  stroke-width: 2px;
+}
+
+.node circle {
+  stroke: #000;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font: 10px sans-serif;
+  pointer-events: none;
+}
