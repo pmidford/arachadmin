@@ -104,11 +104,35 @@ def element3():
 
 
 def pelement():
-    fields=[Field('type', 
+    ele = get_element_args(request)
+    if ele:
+        eler = db.participant_element[ele]
+        lnr = db(db.participant_link.child == ele).select().first().id
+        eform = SQLFORM(db.participant_element, eler)
+        lform = SQLFORM(db.participant_link, lnr)
+    else:
+        eform = SQLFORM(db.participant_element)
+        lform = SQLFORM(db.partipant_link)
+    return dict(ele=index, eform=eform, lform=lform)
+
+
+def foo():   # not used, code pile
+    if request.args(0):
+        ele = request.args(0, cast=int)
+        element = db.participant_element[ele]
+        etype = element['type']
+        link = db.participant_link
+        fields=[Field('type', 
                   'reference particpant_type',
                   required=IS_EMPTY_OR(IS_IN_DB(db,'participant_type.id','%(label)s'))), 
             Field('property', 'reference property' )]
     form = SQLFORM.factory(*fields)
     if form.accepts(request.vars, session):
         reponse.flash = "success"
-    return dict(form=form)
+    return dict(ele=ele, form=form)
+
+def existing_element(index):
+    return SQLFORM(db.participant_element, index)
+
+def new_element():
+    return SQLFORM(db.participant_element)
