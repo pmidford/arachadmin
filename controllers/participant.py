@@ -104,16 +104,24 @@ def element3():
 
 
 def pelement():
+    print "stupid"
     ele = get_element_args(request)
     if ele:
         eler = db.participant_element[ele]
-        lnr = db(db.participant_link.child == ele).select().first().id
-        eform = SQLFORM(db.participant_element, eler)
-        lform = SQLFORM(db.participant_link, lnr)
+        print "eler is %s" % repr(eler)
+        lnr = db(db.participant_link.child == ele).select()
+        print "lnr is %s" % repr(lnr)
+        etr = db(db.pelement2term.element == ele).select()
+        et = etr[0]['term']
+        etl = db.term[et].label
+        part_row = render_participant(db.participant[eler.participant])
+        print "etr is %s " % repr(etr)
+        eform = SQLFORM(db.participant_element,
+                        record=ele,
+                        fields=['type'])
     else:
         eform = SQLFORM(db.participant_element)
-        lform = SQLFORM(db.partipant_link)
-    return dict(ele=index, eform=eform, lform=lform)
+    return dict(ele=ele, epart=part_row, etr=etl, eform=eform, lnr=lnr)
 
 
 def foo():   # not used, code pile

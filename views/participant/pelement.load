@@ -1,4 +1,11 @@
 <h3>Participant Element</h3>
 Element is {{=ele}}
+<br/>
+Participant is {{=epart}}
+<br/>
+{{=etr}}
+</br/>
 {{=eform}}
-{{=lform}}
+<br/>
+{{=lnr}}
+
