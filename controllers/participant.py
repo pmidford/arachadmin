@@ -104,7 +104,6 @@ def element3():
 
 
 def pelement():
-    print "stupid"
     ele = get_element_args(request)
     if ele:
         eler = db.participant_element[ele]
@@ -122,6 +121,16 @@ def pelement():
     else:
         eform = SQLFORM(db.participant_element)
     return dict(ele=ele, epart=part_row, etr=etl, eform=eform, lnr=lnr)
+
+
+def make_element_link_table(link_rows):
+    result = []
+    for row in link_rows:
+        item = {'child': row.child,
+                'parent': row.parent,
+                'type': row.type}
+        result.append(item)
+    return result
 
 
 def foo():   # not used, code pile
