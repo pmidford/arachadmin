@@ -110,6 +110,8 @@ def pelement():
         print "eler is %s" % repr(eler)
         lnr = db(db.participant_link.child == ele).select()
         print "lnr is %s" % repr(lnr)
+        lnt = make_element_link_table(lnr)
+        print "lnt is %s" % repr(lnt)
         etr = db(db.pelement2term.element == ele).select()
         et = etr[0]['term']
         etl = db.term[et].label
@@ -120,7 +122,7 @@ def pelement():
                         fields=['type'])
     else:
         eform = SQLFORM(db.participant_element)
-    return dict(ele=ele, epart=part_row, etr=etl, eform=eform, lnr=lnr)
+    return dict(ele=ele, epart=part_row, etr=etl, eform=eform, lnr=lnr, lnt=lnt)
 
 
 def make_element_link_table(link_rows):
@@ -128,8 +130,9 @@ def make_element_link_table(link_rows):
     for row in link_rows:
         item = {'child': row.child,
                 'parent': row.parent,
-                'type': row.type}
+                'property': row.property}
         result.append(item)
+    print result
     return result
 
 

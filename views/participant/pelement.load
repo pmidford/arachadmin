@@ -7,5 +7,12 @@ Participant is {{=epart}}
 </br/>
 {{=eform}}
 <br/>
+<h3>Link table</h3>
+{{headers=['type','parent']}}
+{{=TABLE(
+         THEAD(TR(*[TH(header) for header in headers])),
+	 TBODY(*[TR(TD(row['property']),
+	           TD(row['parent']))
+         for row in lnt]))}}
 {{=lnr}}
 
