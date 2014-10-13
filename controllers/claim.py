@@ -269,7 +269,7 @@ def insert_element2indiv_map(ele_id,indiv_id):
     db.pelement2individual.insert(element=ele_id, individual=indiv_id)
 
 
-def insert_participant_link(child_id, parent_id, property_id):
+def insert_participant_link(parent_id, child_id, property_id):
     db.participant_link.insert(child=child_id,
                                parent=parent_id,
                                property=property_id)
