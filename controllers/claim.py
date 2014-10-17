@@ -327,15 +327,14 @@ def process_elements_and_links(behavior, elements):
 def process_p_element(element_id):
     """
     """
-
-    term_ids = db(db.pelement2term.element == element_id).select()
-    if len(term_ids) > 0:
-        term_id = term_ids[0].term
+    p2t = db(db.pelement2term.element == element_id).select().first()
+    if p2t:
+        term_id = p2t.term
         term = db(db.term.id == term_id).select().first()
         return (reduce_label(term.label), element_id)
-    i_ids = db(db.pelement2individual.element == element_id).select()
-    if len(i_ids) > 0:
-        i_id = i_ids[0].individual
+    p2i = db(db.pelement2individual.element == element_id).select().first()
+    if p2i:
+        i_id = p2i.individual
         individual = db(db.individual.id == i_id).select().first()
         return (reduce_label(individual.label), element_id)
     return "Neither"

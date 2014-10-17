@@ -112,28 +112,75 @@ def pelement():
         print "lnr is %s" % repr(lnr)
         lnt = make_element_link_table(lnr)
         print "lnt is %s" % repr(lnt)
-        etr = db(db.pelement2term.element == ele).select()
-        et = etr[0]['term']
-        etl = db.term[et].label
+        etx = db(db.pelement2term.element == ele).select().first()
+        if etx:
+            ee = etx['term']
+            etl = db.term[ee].label
+        else:
+            etx = db(db.pelement2individual.element == ele).select().first()
+            if etx:
+                ee = etx['individual']
+                etl = db.individual[ee].label
+            else:
+                ee = None
+                etl = None
         part_row = render_participant(db.participant[eler.participant])
-        print "etr is %s " % repr(etr)
+        print "etr is %s " % repr(ee)
         eform = SQLFORM(db.participant_element,
                         record=ele,
-                        fields=['type'])
+                        fields=['type'],
+                        showid=False)
     else:
         eform = SQLFORM(db.participant_element)
-    return dict(ele=ele, epart=part_row, etr=etl, eform=eform, lnr=lnr, lnt=lnt)
+    return dict(ele=ele, epart=part_row, etr=etl, eform=eform, lnt=lnt)
 
 
 def make_element_link_table(link_rows):
     result = []
     for row in link_rows:
-        item = {'child': row.child,
-                'parent': row.parent,
-                'property': row.property}
+        print "hit first row"
+        child_part = row.child
+        child_m2 = db(db.pelement2term.element == child_part).select().first()
+        if child_m2:
+            child_entity = db.term[child_m2.term]
+        else:
+            child_m2 = db(db.pelement2individual.element == child_part).select().first()
+            if child_m2:
+                child_entity = db.individual[child_m2.individual]
+            else:
+                child_entity = None
+        print "got child"
+        parent_part = row.parent
+        parent_m2 = db(db.pelement2term.element == parent_part).select().first()
+        if parent_m2:
+            parent_entity = db.term[parent_m2.term]
+        else:
+            parent_m2 = db(db.pelement2individual.element == parent_part).select().first()
+            if parent_m2:
+                parent_entity = db.individual[parent_m2.individual]
+            else:
+                parent_entity = None
+        print "got parent"
+        child_label = child_entity.label
+        parent_label = parent_entity.label
+        property_prop = db.property[row.property]
+        property_label = property_prop.label
+        item = {'child': child_label,
+                'parent': parent_label,
+                'property': property_label,
+                'row_id': row.id}
         result.append(item)
     print result
     return result
+
+def elementlink():
+    link_id = request.vars['link_id']
+    form = SQLFORM(db.participant_link,
+                        record=link_id,
+                        fields=['property'],
+                        showid=False)
+
+    return {'form': form}
 
 
 def foo():   # not used, code pile
