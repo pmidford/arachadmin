@@ -155,7 +155,7 @@ db.define_table('property',
                       writable=False),
                 Field('comment','string', length=512),
                 format='%(label)s',
-                migrate=True)
+                migrate=False)
 
 db.define_table('term',
                 Field('source_id', 'string'),
@@ -207,6 +207,14 @@ db.define_table('participant_link',
                 Field('parent', 'reference participant_element'),
                 Field('property', 'reference property', ondelete='NO ACTION'),
                 migrate=False)
+
+
+db.define_table('participant_head',
+                Field('head', 'reference participant_element'),
+                Field('claim', 'reference claim', ondelete='NO ACTION'),
+                Field('property', 'reference property', ondelete='NO ACTION'),
+                migrate=False)
+
 
 db.define_table('pelement2term',
                 Field('element',
