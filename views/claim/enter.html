@@ -34,7 +34,7 @@
       {label: {{=XML(repr(element_list[index][0]))}}, size:{{=len(element_list[index][0])}} }
   {{return}}
   {{def edge_draw(index):}}
-      {source: {{=edge_list[index][0]}}, target: {{=edge_list[index][1]}} }
+      {source: {{=edge_list[index][0]}}, target: {{=edge_list[index][1]}}, color: {{=XML(repr(edge_list[index][2]))}} }
   {{return}} 
   {{def gen_click(index):}}
       $({{=XML(repr('#' + element_list[index][0]))}})
@@ -111,7 +111,8 @@
             .attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
             .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
+            .attr("y2", function(d) { return d.target.y; })
+	    .style("stroke", function(d) { return d.color; })
 
         node.selectAll("rect")
             .attr("x", function(d) {return d.x - 3*d.size; })

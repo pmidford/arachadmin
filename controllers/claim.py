@@ -318,9 +318,8 @@ def process_elements_and_links(behavior, elements):
     edge_list = []
     for element in elements:
         edges = process_p_link(element.id, element_ids)
-        for edge in edges:
-            edge_list.append(edge)
-    print "links = {}".format(str(edge_list))
+        edge_list.extend(edges)
+    print "links = {0}".format(str(edge_list))
     return (element_list, edge_list)
 
 
@@ -356,10 +355,19 @@ def process_p_link(participant_id,id_list):
     for link in links:
         child = link.child
         parent = link.parent
+        property_color = property_color_lookup(link.property)
         child_index = id_list.index(child)
         parent_index = id_list.index(parent)
-        result.append((child_index, parent_index))
+        result.append((child_index, parent_index, property_color))
     return result
+
+
+def property_color_lookup(property):
+    source_id = db.property(property).source_id
+    if source_id == "http://purl.obolibrary.org/obo/BFO_0000050":
+        return "blue"
+    else:
+        return "black"
 
 
 def status_tool():
