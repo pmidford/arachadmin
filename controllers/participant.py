@@ -129,10 +129,28 @@ def pelement():
         eform = SQLFORM(db.participant_element,
                         record=ele,
                         fields=['type'],
-                        showid=False)
-    else:
+                        showid=False,
+                        buttons = _build_buttons())
+    else:  # maybe make this never happend
         eform = SQLFORM(db.participant_element)
+
     return dict(ele=ele, epart=part_row, etr=etl, eform=eform, lnt=lnt)
+
+def _build_buttons():
+    return [INPUT(_name=T("Update"), 
+                  _type="submit", 
+                  _value="Submit",
+                  _class='btn', 
+                  _style='margin-top: 1em;'),
+            A(T("Add Child"), 
+              _href=URL('add_child'),
+              _class='btn', 
+              _style='margin-top: 1em;'),
+            A(T("Add Sibling"),
+              _href=URL('add_sibling'),
+              _class='btn', 
+              _style='margin-top: 1em;')]
+        
 
 
 def make_element_link_table(link_rows):
@@ -183,20 +201,6 @@ def elementlink():
     return {'form': form}
 
 
-def foo():   # not used, code pile
-    if request.args(0):
-        ele = request.args(0, cast=int)
-        element = db.participant_element[ele]
-        etype = element['type']
-        link = db.participant_link
-        fields=[Field('type', 
-                  'reference particpant_type',
-                  required=IS_EMPTY_OR(IS_IN_DB(db,'participant_type.id','%(label)s'))), 
-            Field('property', 'reference property' )]
-    form = SQLFORM.factory(*fields)
-    if form.accepts(request.vars, session):
-        reponse.flash = "success"
-    return dict(ele=ele, form=form)
 
 def existing_element(index):
     return SQLFORM(db.participant_element, index)
