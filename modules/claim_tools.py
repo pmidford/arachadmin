@@ -19,7 +19,6 @@ def issues_list(claim,db):
 
 def check_participant(db, claim, part_id):
     """Generates a list of issues for a single participant"""
-    # from gluon import *
     p = db(db.participant.id == part_id).select().first()
     link = make_participant_url(claim, p)
     p_issues = []
