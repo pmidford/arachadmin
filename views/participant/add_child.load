@@ -1,0 +1,7 @@
+<div id="add_element">
+<h3>Add Element</h3>
+<br/>
+{{=form}}
+<br/>
+<div/>
+

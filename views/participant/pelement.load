@@ -3,6 +3,8 @@ Element is {{=etr}}
 <br/>
 {{=eform}}
 <br/>
+{{=add_buttons['child_button']}}
+{{=add_buttons['sibling_button']}}
 <div id="linkform"></div>
 <h3>Link table</h3>
 {{headers=['type','parent']}}

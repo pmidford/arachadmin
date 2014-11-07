@@ -192,6 +192,7 @@ def update_tool():
                     if participant.taxon:
                         if (participant.quantification == 'some'):
                             tax_id = insert_participant_element(p_id,some_code)
+                            head_id = insert_participant_head(tax_id, claim.id)
                             insert_element2term_map(tax_id, participant.taxon)
                         elif (participant.quantification == 'individual'):
                             ind = lookup_individual(participant.label,
@@ -204,6 +205,8 @@ def update_tool():
                             tax_id = insert_participant_element(p_id,
                                                                 individual_code)
                             insert_element2indiv_map(tax_id,ind)
+                        else:
+                            print "participant %d has no taxon" % p_id
                     if participant.anatomy:
                         if (participant.quantification == "some"):
                             ana_id = insert_participant_element(p_id, some_code)
@@ -222,13 +225,23 @@ def update_tool():
                             ana_id = insert_participant_element(p_id,individual_code)
                             insert_element2indiv_map(ana_id, ind)
                             insert_participant_link(tax_id, ana_id, part_of.id)
+                        else:
+                            "participant %d has no anatomy" % p_id
                     if participant.substrate:  # assume for now that substrates are always some expressions
-                        print "substrate assumes some quantified"
-                        sub_id = insert_participant_element(p_id, some_code)
-                        insert_element2term_map(sub_id, participant.substrate)
+                        substrate_element(participant.substrate, p_id, some_code)
+                    elements = db(db.participant_element.participant == participant.id).select()
+                else:
+                    print "participant has existing elements, not updated"
                 result.append((p_id,len(elements))) 
     return {'update_report': result }
 
+
+def substrate_element(sub_term,p_id,some_code):
+    # sub_expr is term id of substrate
+    print "substrate assumes some quantified"
+    sub_id = insert_participant_element(p_id, some_code)
+    insert_element2term_map(sub_id, sub_term)
+    
 
 def get_participant_codes():
     some_code = get_participant_code('some_term')
@@ -274,6 +287,11 @@ def insert_participant_link(parent_id, child_id, property_id):
                                parent=parent_id,
                                property=property_id)
 
+def insert_participant_head(head_ele, claim):
+    prop = get_predicate('http://purl.obolibrary.org/obo/BFO_0000056')
+    db.participant_head.insert(head=head_ele,
+                               claim=claim,
+                               property=prop)
 
 
 
@@ -388,16 +406,6 @@ def status_tool():
     return {"report": result}
 
 
-def view_participant():
-    """Don't really need to treat participant records as first class
-    entities, but want a place to display and edit chains"""
 
 
-def edit_participant():
-    """a stub for now"""
 
-# a test stub
-def testecho():
-    """called with the id of participant_element"""
-    participant_id = request.args[0]
-    return 'testecho: ' + participant_id
