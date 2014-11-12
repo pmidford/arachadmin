@@ -45,31 +45,36 @@ def get_element_args(req):
 def pelement():
     ele = get_element_args(request)
     if ele:
-        eler = db.participant_element[ele]
-        print "eler is %s" % repr(eler)
-        lnr = db(db.participant_link.child == ele).select()
-        print "lnr is %s" % repr(lnr)
-        lnt = make_element_link_table(lnr)
-        print "lnt is %s" % repr(lnt)
-        etx = db(db.pelement2term.element == ele).select().first()
-        if etx:
-            ee = etx['term']
-            etl = db.term[ee].label
-        else:
-            etx = db(db.pelement2individual.element == ele).select().first()
+        if ele > 0:
+            eler = db.participant_element[ele]
+            print "eler is %s" % repr(eler)
+            lnr = db(db.participant_link.child == ele).select()
+            print "lnr is %s" % repr(lnr)
+            lnt = make_element_link_table(lnr)
+            print "lnt is %s" % repr(lnt)
+            etx = lookup_pelement_term_map(ele)
             if etx:
-                ee = etx['individual']
-                etl = db.individual[ee].label
+                ee = etx['term']
+                etl = db.term[ee].label
             else:
-                ee = None
-                etl = None
-        part_row = render_participant(db.participant[eler.participant])
-        print "etr is %s " % repr(ee)
-        eform = SQLFORM(db.participant_element,
-                        record=ele,
-                        fields=['type'],
-                        showid=False)
-        add_buttons = _build_buttons(ele)
+                etx = lookup_pelement_individual_map(ele)
+                if etx:
+                    ee = etx['individual']
+                    etl = db.individual[ee].label
+                else:
+                    ee = None
+                    etl = None
+            part_row = render_participant(db.participant[eler.participant])
+            print "etr is %s " % repr(ee)
+            eform = SQLFORM(db.participant_element,
+                            record=ele,
+                            fields=['type'],
+                            showid=False)
+            add_buttons = _build_buttons(ele)
+        else:  # should be behavior term; treat as claim
+            print "hit claim"
+            # LOAD(f="add_participant_click", target='add_element')
+            return None
     else:  # maybe make this never happend
         eform = SQLFORM(db.participant_element)
 
@@ -99,24 +104,22 @@ def _build_buttons(element):
 def make_element_link_table(link_rows):
     result = []
     for row in link_rows:
-        print "hit first row"
         child_part = row.child
-        child_m2 = db(db.pelement2term.element == child_part).select().first()
+        child_m2 = lookup_pelement_term_map(child_part)
         if child_m2:
             child_entity = db.term[child_m2.term]
         else:
-            child_m2 = db(db.pelement2individual.element == child_part).select().first()
+            child_m2 = lookup_pelement_individual_map(child_part)
             if child_m2:
-                child_entity = db.individual[child_m2.individual]
+                child_entity = db.individual(child_m2.individual)
             else:
                 child_entity = None
-        print "got child"
         parent_part = row.parent
-        parent_m2 = db(db.pelement2term.element == parent_part).select().first()
+        parent_m2 = lookup_pelement_term_map(parent_part)
         if parent_m2:
             parent_entity = db.term[parent_m2.term]
         else:
-            parent_m2 = db(db.pelement2individual.element == parent_part).select().first()
+            parent_m2 = lookup_pelement_individual_map(parent_part)
             if parent_m2:
                 parent_entity = db.individual[parent_m2.individual]
             else:
@@ -132,6 +135,14 @@ def make_element_link_table(link_rows):
     return result
 
 
+def lookup_pelement_term_map(element):
+    return db(db.pelement2term.element == element).select().first()
+
+
+def lookup_pelement_individual_map(element):
+    return db(db.pelement2individual.element == element).select().first()
+
+
 def elementlink():
     """builds form for setting link property of new link"""
     link_id = request.vars['link_id']
@@ -143,16 +154,25 @@ def elementlink():
 
 TERM_TYPES = ['some_term', 'intersection', 'union', 'only_term']
 
+
 def add_child():
     parent = get_element_args(request)
     print "parent = {0}".format(parent)
-    form = SQLFORM(db.participant_element,
-                   fields=['type'])
+    form = SQLFORM.factory(Field('type',
+                                 'reference participant_type',
+                                 requires=IS_EMPTY_OR(IS_IN_DB(db,
+                                                               'participant_type.id',
+                                                               '%(label)s'))),
+                           Field('property',
+                                 'reference property',
+                                 requires=IS_EMPTY_OR(IS_IN_DB(db,
+                                                               'property.id',
+                                                               '%(label)s'))))
     if form.process().accepted:  # validators?
-        type_label = db.participant_type[form.vars.type].label
-        ele = form.vars.id
-        print "created {0}".format(ele)
+        type_label = db.participant_type(form.vars.type).label
+        property_label = db.property(form.vars.property).label
         print "type_label is {}".format(type_label)
+        print "property is {}".format(property_label)
         if type_label == 'individual':
             print "want to load finish_individual"
             return LOAD("participant",
@@ -162,11 +182,12 @@ def add_child():
                         content='loading individual editor....')
         elif type_label in TERM_TYPES:
             print "want to load finish_term"
-            vars = {'element_type': type_label,
-                    'parent': parent}
+            choose_vars = {'element_type': form.vars.type,
+                           'property': property,
+                           'parent': parent}
             return LOAD("participant",
                         'choose_domain.load',
-                        vars=vars,
+                        vars=choose_vars,
                         target='add_element',
                         ajax=True,
                         content='loading term editor....')
@@ -193,13 +214,13 @@ def finish_individual():
 def choose_domain():
     form = FORM('Choose a domain',
                 FIELDSET('taxonomy',
-                         INPUT(_type='radio', 
-                               _name='domain', 
+                         INPUT(_type='radio',
+                               _name='domain',
                                _value='taxonomy')),
                 BR(),
                 FIELDSET('anatomy',
-                         INPUT(_type='radio', 
-                               _name='domain', 
+                         INPUT(_type='radio',
+                               _name='domain',
                                _value='anatomy')),
                 BR(),
                 INPUT(_type='submit'))
@@ -207,12 +228,12 @@ def choose_domain():
         element_type = request.vars.element_type
         domain = form.vars.domain
         parent = request.vars.parent
-        vars = {'domain': domain,
-                'element_type': element_type,
-                'parent': parent}
+        finish_vars = {'domain': domain,
+                       'element_type': element_type,
+                       'parent': parent}
         return LOAD("participant",
                     'finish_term.load',
-                    vars = vars,
+                    vars=finish_vars,
                     target='add_element',
                     ajax=True,
                     content='loading term editor....')
@@ -227,27 +248,55 @@ def finish_term():
         field_domain = anatomy_domain
     else:
         field_domain = term
-    form = SQLFORM.factory(Field('term', 
+    form = SQLFORM.factory(Field('term',
                                  'reference term',
-                                 requires=IS_EMPTY_OR(IS_IN_DB(field_domain,'term.id','%(label)s'))))
+                                 requires=IS_EMPTY_OR(IS_IN_DB(field_domain,
+                                                               'term.id',
+                                                               '%(label)s'))))
     if form.process().accepted:
         term = form.vars.term
         parent = request.vars.parent
-        element_type = request.vars.element_type
-        participant = request.vars.participant
+        participant_type_id = request.vars.element_type
         print "selected term {0}".format(str(term))
         print "passed element_type is {0}".format(request.vars.element_type)
         print "passed parent is {0}".format(parent)
-        # element_type_id = lookup_element_type(request.vars.element_type)
-        # participant_id = lookup_participant(parent)
-        #pe = insert_pelement()
-        #pe2t = insert_pelement2term()
+        print "participant_code {0}".format(participant_type_id)
+        participant_id = lookup_participant(parent)
+        print "participant {0}".format(participant_id)
+        new_element = insert_participant_element(participant_id,
+                                                 participant_type_id)
+        print "new element {0}".format(new_element)
+        new_map = insert_element2term_map(new_element, term)
+        print "new map {0}".format(new_map)
+        redirect(request.env.http_web2py_component_location, client_side=True)
     return {'form': form}
+
+
+def get_participant_code(type_str):
+    return db(db.participant_type.label == type_str).select().first().id
+
+
+def lookup_participant(parent):
+    parent_element = db.participant_element(parent)
+    return parent_element.participant
+
+
+def insert_participant_element(participant_id, type_id):
+    return db.participant_element.insert(participant=participant_id,
+                                         type=type_id)
+
+
+def lookup_claim(participant_id):
+    return db.participant(participant_id).claim
+
+
+def insert_element2term_map(ele_id, term_id):
+    return db.pelement2term.insert(element=ele_id, term=term_id)
 
 
 def finish_child():
     parent = get_element_args(request)
-    eler = db.participant_element[ele]
+    eler = db.participant_element(ele)
     insert_participant_link(parent, ele, get_partof_property())
     # need to set up the parent links
     print "eler is %s" % repr(eler)
@@ -255,7 +304,7 @@ def finish_child():
     print "lnr is %s" % repr(lnr)
     lnt = make_element_link_table(lnr)
     print "lnt is %s" % repr(lnt)
-    (entity,entity_label) = get_entity(ele)
+    (entity, entity_label) = get_entity(ele)
     # part_row = render_participant(db.participant[eler.participant])
     print "entity is %s " % repr(entity)
     eform = SQLFORM(db.participant_element,
@@ -287,12 +336,10 @@ def get_entity(ele):
             return (entity, entity_label)
         else:
             return (None, None)
-            entity = None
-            entity_label = None
 
 
 def get_term_map_for_ele(ele):
-    """get the pelement2term mapping for this element"""  
+    """get the pelement2term mapping for this element"""
     # TODO: should be unique
     return db(db.pelement2term.element == ele).select().first()
 
@@ -303,66 +350,13 @@ def get_individual_map_for_ele(ele):
     return db(db.pelement2individual.element == ele).select().first()
 
 
-def old_add_sibling():
-    sib = get_element_args(request)
-    print "sib = {0}".format(sib)
-    ele = db.participant_element.insert()
-    eler = db.participant_element[ele]
-    # need to set up the parent links
-    print "eler is %s" % repr(eler)
-    lnr = db(db.participant_link.child == ele).select()
-    print "lnr is %s" % repr(lnr)
-    lnt = make_element_link_table(lnr)
-    print "lnt is %s" % repr(lnt)
-    etx = db(db.pelement2term.element == ele).select().first()
-    if etx:
-        ee = etx['term']
-        etl = db.term[ee].label
-    else:
-        etx = db(db.pelement2individual.element == ele).select().first()
-        if etx:
-            ee = etx['individual']
-            etl = db.individual[ee].label
-        else:
-            ee = None
-            etl = None
-        part_row = None #  render_participant(db.participant[eler.participant])
-        print "etr is %s " % repr(ee)
-        eform = SQLFORM(db.participant_element,
-                        record=ele,
-                        fields=['type'],
-                        showid=False)
-        add_buttons = _build_buttons(ele)
-    return dict(ele=ele,
-                epart=part_row,
-                etr=etl,
-                eform=eform,
-                lnt=lnt,
-                add_buttons=add_buttons)
-
-
 PART_OF_URI = 'http://purl.obolibrary.org/obo/BFO_0000050'
 
+def get_partof_property():
+    return db(db.property.source_id == PART_OF_URI).select().first()
 
 def insert_participant_link(parent_id, child_id, property_id):
-    property_id = db(db.property.source_id == PART_OF_URI).select().first()
     db.participant_link.insert(child=child_id,
                                parent=parent_id,
                                property=property_id)
 
-
-def get_add_args(req):
-    """ """
-    if req.args(0):
-        element = req.args(0, cast=int)
-    elif req.vars['element']:
-        element = int(req.vars['element'])
-    else:
-        element = None
-    if req.args(1):
-        parent = req.args(1, cast=int)
-    elif req.vars['parent']:
-        parent = int(req.vars['parent'])
-    else:
-        parent = None
-    return element

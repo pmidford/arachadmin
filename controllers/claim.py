@@ -2,6 +2,10 @@
 """Controller for claims (statements about observed or generalized 
 occurances of behavior)"""
 
+PART_OF_URI = 'http://purl.obolibrary.org/obo/BFO_0000050'
+PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/BFO_0000056'
+
+
 def index():
     """
     Entry point to the claim entry tools;
@@ -142,7 +146,7 @@ def add_d3_files():
 
 def get_primary_participant(claim):
     """returns the participant row marked as the primary participant
-       for the claim""" 
+       for the claim"""
     rows = db((db.participant2claim.claim == claim.id) &
               (db.participant2claim.participant_index == 1)).select()
     assert len(rows) == 1
@@ -183,15 +187,15 @@ def update_tool():
             participants = [row.participant for row in rows]
             for participant in participants:
                 p_id = participant.id
-                elements = db(db.participant_element.participant == 
-                              participant.id).select()
+                elements = get_elements(p_id)
                 if len(elements) == 0:
                     tax_id = None
                     ana_id = None
                     sub_id = None
                     if participant.taxon:
                         if (participant.quantification == 'some'):
-                            tax_id = insert_participant_element(p_id,some_code)
+                            tax_id = insert_participant_element(p_id,
+                                                                some_code)
                             head_id = insert_participant_head(tax_id, claim.id)
                             insert_element2term_map(tax_id, participant.taxon)
                         elif (participant.quantification == 'individual'):
@@ -204,13 +208,15 @@ def update_tool():
                                                         claim.narrative)
                             tax_id = insert_participant_element(p_id,
                                                                 individual_code)
-                            insert_element2indiv_map(tax_id,ind)
+                            insert_element2indiv_map(tax_id, ind)
                         else:
                             print "participant %d has no taxon" % p_id
                     if participant.anatomy:
                         if (participant.quantification == "some"):
-                            ana_id = insert_participant_element(p_id, some_code)
-                            insert_element2term_map(ana_id, participant.anatomy)
+                            ana_id = insert_participant_element(p_id,
+                                                                some_code)
+                            insert_element2term_map(ana_id,
+                                                    participant.anatomy)
                             insert_participant_link(tax_id, ana_id, part_of.id)
                         elif (participant.quantification == 'individual'):
                             ana_label = get_term_label(participant.anatomy)
@@ -222,26 +228,34 @@ def update_tool():
                                 ind = insert_individual(ind_label,
                                                         participant.anatomy,
                                                         claim.narrative)
-                            ana_id = insert_participant_element(p_id,individual_code)
+                            ana_id = insert_participant_element(p_id,
+                                                                individual_code)
                             insert_element2indiv_map(ana_id, ind)
                             insert_participant_link(tax_id, ana_id, part_of.id)
                         else:
-                            "participant %d has no anatomy" % p_id
-                    if participant.substrate:  # assume for now that substrates are always some expressions
-                        substrate_element(participant.substrate, p_id, some_code)
-                    elements = db(db.participant_element.participant == participant.id).select()
+                            print "participant %d has no anatomy" % p_id
+                    if participant.substrate:
+                        # assume for now that substrates are always some expressions
+                        substrate_element(participant.substrate, p_id)
+                    elements = get_elements(p_id)
                 else:
                     print "participant has existing elements, not updated"
-                result.append((p_id,len(elements))) 
-    return {'update_report': result }
+                result.append((p_id, len(elements)))
+    return {'update_report': result}
 
 
-def substrate_element(sub_term,p_id,some_code):
+def get_elements(p_id):
+    '''returns row set of participant elements for this participant'''
+    return db(db.participant_element.participant == p_id).select()
+
+
+def substrate_element(sub_term, p_id):
     # sub_expr is term id of substrate
+    some_code = get_participant_code('some_term')
     print "substrate assumes some quantified"
     sub_id = insert_participant_element(p_id, some_code)
     insert_element2term_map(sub_id, sub_term)
-    
+
 
 def get_participant_codes():
     some_code = get_participant_code('some_term')
@@ -249,7 +263,11 @@ def get_participant_codes():
     individual_code = get_participant_code('individual')
     intersection_code = get_participant_code('intersection')
     union_code = get_participant_code('union')
-    return (some_code,only_code,individual_code,intersection_code,union_code)
+    return (some_code,
+            only_code,
+            individual_code,
+            intersection_code,
+            union_code)
 
 
 def get_participant_code(type_str):
@@ -261,8 +279,8 @@ def get_term_label(term_id):
 
 
 def get_predicates():
-    part_of_pred = get_predicate('http://purl.obolibrary.org/obo/BFO_0000050')
-    participates_in_pred = get_predicate('http://purl.obolibrary.org/obo/BFO_0000056')
+    part_of_pred = get_predicate(PART_OF_URI)
+    participates_in_pred = get_predicate(PARTICIPATES_IN_URI)
     return (part_of_pred, participates_in_pred)
 
 
@@ -271,14 +289,15 @@ def get_predicate(uri):
 
 
 def insert_participant_element(participant_id, type_id):
-    return db.participant_element.insert(participant=participant_id, type=type_id)
+    return db.participant_element.insert(participant=participant_id,
+                                         type=type_id)
 
 
-def insert_element2term_map(ele_id,term_id):
+def insert_element2term_map(ele_id, term_id):
     db.pelement2term.insert(element=ele_id, term=term_id)
 
 
-def insert_element2indiv_map(ele_id,indiv_id):
+def insert_element2indiv_map(ele_id, indiv_id):
     db.pelement2individual.insert(element=ele_id, individual=indiv_id)
 
 
@@ -287,26 +306,26 @@ def insert_participant_link(parent_id, child_id, property_id):
                                parent=parent_id,
                                property=property_id)
 
+
 def insert_participant_head(head_ele, claim):
-    prop = get_predicate('http://purl.obolibrary.org/obo/BFO_0000056')
+    prop = get_predicate(PARTICIPATES_IN_URI)
     db.participant_head.insert(head=head_ele,
                                claim=claim,
                                property=prop)
 
 
-
 def lookup_individual(label, term, narrative):
     """first pass at looking up an individual from its label"""
-    # to do, add narrative to this query
+    # TODO: add narrative to this query
     if label is None:
         print "no label in lookup"
-        q = db(db.individual.term == term)
+        query = db(db.individual.term == term)
     else:
-        q = db((db.individual.label == label) & (db.individual.term == term))
-    if q.isempty():
+        query = db((db.individual.label == label) & (db.individual.term == term))
+    if query.isempty():
         return None
     else:
-        rows = q.select();
+        rows = query.select()
         if len(rows) == 1:
             return rows.first()
         else:
@@ -317,21 +336,21 @@ def lookup_individual(label, term, narrative):
 def insert_individual(label, term, narrative):
     """looks up an individual by label and term (type) and
        updates db to associate it to the narrative"""
-    ind = db.individual.insert(label=label, term=term);
+    ind = db.individual.insert(label=label, term=term)
     if narrative:
-        db.individual2narrative.insert(individual=ind,narrative=narrative)
+        db.individual2narrative.insert(individual=ind, narrative=narrative)
     return ind
 
 
 def process_elements_and_links(behavior, elements):
     """this generates lists of elements and edges"""
     behavior_id = behavior.id
-    behavior_entry = (reduce_label(behavior.label),-1)
-    element_ids = [element.id for element in elements]  
+    behavior_entry = (reduce_label(behavior.label), -1)
+    element_ids = [element.id for element in elements]
     element_labels = [process_p_element(element.id) for element in elements]
     element_ids.insert(0, behavior_id)
     element_labels.insert(0, behavior_entry)
-    print "{}; {}".format(str(element_ids),str(element_labels))
+    print "{}; {}".format(str(element_ids), str(element_labels))
     element_list = element_labels
     edge_list = []
     for element in elements:
@@ -363,12 +382,11 @@ def reduce_label(label):
     return '_'.join(words)
 
 
-def process_p_link(participant_id,id_list):
-    """returns list of pairs of child and parent elements at ends of link; 
+def process_p_link(participant_id, id_list):
+    """returns list of pairs of child and parent elements at ends of link;
        these are coded by their position in the id_list, which seems to
        be what the d3 code wants to see"""
-    links = db(db.participant_link.child == 
-               participant_id).select()
+    links = db(db.participant_link.child == participant_id).select()
     result = []
     for link in links:
         child = link.child
@@ -389,9 +407,8 @@ def property_color_lookup(property):
 
 
 def status_tool():
-    """
-    Scans the set of claims in the database and generates a list of issues to fix.
-    """
+    """Scans the set of claims in the database and generates
+    a list of issues to fix."""
     import claim_tools
     claims = db().select(db.claim.ALL)
     result = []
@@ -399,13 +416,8 @@ def status_tool():
         issues = claim_tools.issues_list(claim, db)
         if issues:
             for issue in issues:
-                claim_descr = claim.publication_behavior # not very pythonic way of doing this
-                claim_item = (claim_descr, issue[0], issue[1])
+                claim_item = (claim.publication_behavior,
+                              issue[0],
+                              issue[1])
                 result.append(claim_item)
-    print result
     return {"report": result}
-
-
-
-
-
