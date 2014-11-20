@@ -15,20 +15,68 @@ def list():
     return {"items": result}
 
 
+def head_form():
+    return {}
+
+def element_initial():
+    return {}
+
+
 def enter():
-    """
-    provides a form for creating/editing a narrative record
-    """
-    if request.args(0):
-        participant = db.participant(request.args(0, cast=int))
-        form = SQLFORM(db.participant, participant)
-    else:
-        form = SQLFORM(db.participant)
-    if form.process().accepted:
-        response.flash = 'participant table modified'
-    elif form.errors:
-        response.flash = 'errors in submission'
+    """ Improved element focussed entry """
+    form = FORM(FIELDSET('term',
+                         INPUT(_type='radio',
+                               _name='participant_type',
+                               _value='term')),
+                BR(),
+                FIELDSET('individual',
+                         INPUT(_type='radio',
+                               _name='participant_type',
+                               _value='individual')),
+                BR())
+    if form.process().accepted:  # validators?
+        type_label = db.participant_type(form.vars.type).label
+        property_label = db.property(form.vars.property).label
+        print "type_label is {}".format(type_label)
+        print "property is {}".format(property_label)
+        if type_label == 'individual':
+            print "want to load finish_individual"
+            return LOAD("participant",
+                        'finish_individual.load',
+                        target='add_element',
+                        ajax=True,
+                        content='loading individual editor....')
+        elif type_label in TERM_TYPES:
+            print "want to load finish_term"
+            choose_vars = {'element_type': form.vars.type,
+                           'property': property,
+                           'parent': parent}
+            return LOAD("participant",
+                        'choose_domain.load',
+                        vars=choose_vars,
+                        target='add_element',
+                        ajax=True,
+                        content='loading term editor....')
+        else:
+            print "Fell through"
     return {'form': form}
+
+
+
+# def enter():
+#     """
+#     provides a form for creating/editing a narrative record
+#     """
+#    if request.args(0):
+#        participant = db.participant(request.args(0, cast=int))
+#        form = SQLFORM(db.participant, participant)
+#    else:
+#        form = SQLFORM(db.participant)
+#    if form.process().accepted:
+#        response.flash = 'participant table modified'
+#    elif form.errors:
+#        response.flash = 'errors in submission'
+#    return {'form': form}
 
 
 def get_element_args(req):
@@ -336,6 +384,16 @@ def get_entity(ele):
             return (entity, entity_label)
         else:
             return (None, None)
+
+# new stuff getting called from the head edit pane in claim.py
+
+def start_individual_head():
+    return None
+
+def start_term_head():
+    return None
+
+
 
 
 def get_term_map_for_ele(ele):

@@ -59,6 +59,42 @@ def enter():
     """
     element_list = []
     edge_list = []
+    link_table = None
+    add_d3_files()
+    claim_arg, participant_arg = get_args(request)
+    if claim_arg:
+        link_table = make_link_table(db.claim(claim_arg))
+    claim_form_load = LOAD('claim',
+                           'claim_form.load',
+                           vars={'claim': claim_arg},
+                           target='claim_form',
+                           ajax=True,
+                           content='loading claim editor')
+    participant_head_load = LOAD('participant',
+                                 'head_form.load',
+                                 target='participant_head',
+                                 vars={'participant': participant_arg},
+                                 ajax=True,
+                                 content='loading head editor')
+    participant_element_load = LOAD('participant',
+                                    'element_initial.load',
+                                    target='participant_element',
+                                    vars={'participant': participant_arg},
+                                    ajax=True,
+                                    content='loading element editor')
+    return {'claim_form': claim_form_load,
+            'head_form': participant_head_load,
+            'element_form': participant_element_load,
+            "link_table": link_table,
+            "element_list": element_list,
+            "edge_list": edge_list}
+
+
+def old_enter():
+    """
+    """
+    element_list = []
+    edge_list = []
     add_d3_files()
     claim_arg, participant_arg = get_args(request)
     if claim_arg and participant_arg:
@@ -66,7 +102,7 @@ def enter():
         participant = db.participant(participant_arg)
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
-        participant_form = SQLFORM(db.participant, participant)
+        participant_form = make_participant_form(participant_arg)
         elements = db(db.participant_element.participant ==
                       participant.id).select()
         behavior = db(db.term.id == claim.behavior_term).select().first()
@@ -77,10 +113,10 @@ def enter():
         claim = db.claim(claim_arg)
         link_table = make_link_table(claim)
         main_form = SQLFORM(db.claim, claim)
-        participant_form = SQLFORM(db.participant)
+        participant_form = make_participant_form()
     else:
         main_form = SQLFORM(db.claim)
-        participant_form = SQLFORM(db.participant)
+        participant_form = make_participant_form()
         link_table = []
     if main_form.process().accepted:
         claim = main_form.vars.id
@@ -88,30 +124,14 @@ def enter():
         response.flash = 'claim table modified'
     elif main_form.errors:
         response.flash = 'errors in claim submission'
+    print "Checkpoint -1"
+    print participant_form.vars
     if participant_form.process().accepted:
-        if claim:
-            participant_id = participant_form.vars.id
-            existing_links = db((db.participant2claim.claim ==
-                                 claim.id) &
-                                (db.participant2claim.participant ==
-                                 participant_id)).select()
-            other_links = db(db.participant2claim.claim ==
-                             claim).select()
-            if existing_links:
-                response.flash = 'participant updated'
-            else:
-                if other_links:
-                    part_index = len(other_links)+1
-                    response.flash = 'new participant added to table'
-                else:
-                    part_index = 1
-                    response.flash = 'participant table modified'
-                db.participant2claim.insert(claim=claim,
-                                            participant=participant_id,
-                                            participant_index=part_index)
-                link_table = make_link_table(claim)
-        else:
-            response.flash = 'error: no claim to link participant to'
+        participant_form, flash = update_participant_head_form(claim, participant_form)
+        print "Checkpoint 0"
+        print participant_form
+        if flash:
+            response.flash = flash
     elif participant_form.errors:
         response.flash = 'errors in participant submission'
     return {"main_form": main_form,
@@ -135,6 +155,166 @@ def get_args(req):
     else:
         participant = None
     return (claim, participant)
+
+
+def claim_form():
+    print request.vars
+    claim = request.vars['claim']
+    form = SQLFORM(db.claim, claim)
+    if form.process().accepted:
+        print request.var.claim
+    return {'form': form}
+
+
+def head_form():
+    partic = req.vars['participant']
+    if partic is None:
+        return  LOAD('participant',
+                     'head_form.load',
+                     target='participant_head',
+                     vars={'participant': participant_arg},
+                     ajax=True,
+                     content='loading head editor')
+    else:
+        form = SQLFORM(db.participant, partic)
+        if form.process().accepted:
+            print request.vars
+        return {'form': form}
+
+
+def head_form_initial():
+    """generates and handles to start building a participant"""
+    form = FORM(INPUT(_type='text',_name='head'),
+                BR(),
+                INPUT(_type='submit'))
+    if form.process().accepted:
+        print request.vars.head
+    return {'form': form}
+
+
+
+
+def update_participant_head_form(claim, participant_form):
+    print "Checkpoint 1"
+    if claim:
+        print "Checkpoint 2"
+        flash = None
+        print participant_form.vars
+        if participant_form.vars.domain:
+            domain_str = participant_form.vars.domain
+            pub_str = participant_form.vars.publication_string
+            part_type = participant_form.vars.participant_type
+            new_form = head_domain_form(pub_str, part_type, domain_str)
+            print "Want to select a term from domain {0}".format(domain_str)
+        else:
+            pub_str = participant_form.vars.publication_string
+            part_type = participant_form.vars.participant_type
+            head_vars = {'publication_string': pub_str,
+                         'claim': claim}
+            if part_type == 'individual':
+                new_form = start_individual_head_form(pub_str, claim) 
+            else:
+                new_form = start_term_head_form(pub_str, claim)
+    else:
+        flash = 'error: no claim to link participant to'
+    return (new_form, flash)
+
+
+
+def make_participant_form(id=None):
+    if id:
+        partic = db.participant[id]
+        pubstr=partic.publication_taxon
+    else:
+        pubstr = ''
+    fields = make_initial_participant_fields(pubstr)
+    submit_fields = [BR(),
+                     INPUT(_type='submit')]
+    fields.extend(submit_fields)
+    form = FORM(*fields)
+    return form
+
+def start_individual_head_form(pub_str, claim):
+    fields = make_initial_participant_fields(pub_str)
+    submit_fields = [BR(),
+                     INPUT(_type='submit')]
+    fields.extend(submit_fields)
+    form = FORM(*fields)
+    return form
+
+def start_term_head_form(pub_str, claim):
+    fields = make_initial_participant_fields(pub_str)
+    domain_fields = [BR(),
+                     FIELDSET('taxonomy',
+                              INPUT(_type='radio',
+                                    _name='domain',
+                                    _value='taxonomy')),
+                     BR(),
+                     FIELDSET('anatomy',
+                              INPUT(_type='radio',
+                                    _name='domain',
+                                    _value='anatomy'))]
+    fields.extend(domain_fields)
+    submit_fields = [BR(),
+                     INPUT(_type='submit')]
+    fields.extend(submit_fields)
+    form = FORM(*fields)
+    return form
+
+
+def head_domain_form(pub_str, claim, domain_str):
+    fields = make_initial_participant_fields(pub_str)
+    domain = [BR(),
+              'Domain',
+              domain_str]
+    fields.extend(domain)
+    field_domain = taxon_domain
+    form = SQLFORM.factory(Field('term',
+                                 'reference term',
+                                 requires=IS_EMPTY_OR(IS_IN_DB(field_domain,
+                                                               'term.id',
+                                                               '%(label)s'))))
+    return form
+
+
+
+def make_initial_participant_fields(pubstr, p_type=None):
+    return [FIELDSET('publication string',
+                     INPUT(_name='publication_string',_value=pubstr)),
+            BR(),
+            FIELDSET('term',
+                     INPUT(_type='radio',
+                           _name='participant_type',
+                           _value='term')),
+            BR(),
+            FIELDSET('individual',
+                     INPUT(_type='radio',
+                           _name='participant_type',
+                           _value='individual'))]
+
+
+def finish_participant_head():
+    """needs lots of work"""
+    participant_id = participant_form.vars.id
+    existing_links = db((db.participant2claim.claim ==
+                         claim.id) &
+                        (db.participant2claim.participant ==
+                         participant_id)).select()
+    other_links = db(db.participant2claim.claim == claim).select()
+    if existing_links:
+        response.flash = 'participant updated'
+    else:
+        if other_links:
+            part_index = len(other_links)+1
+            response.flash = 'new participant added to table'
+        else:
+            part_index = 1
+            response.flash = 'participant table modified'
+        db.participant2claim.insert(claim=claim,
+                                    participant=participant_id,
+                                    participant_index=part_index)
+    link_table = make_link_table(claim)
+    return link_table
 
 
 def add_d3_files():

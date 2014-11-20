@@ -4,7 +4,7 @@
 <DIV class="row">
    <DIV class="span6">
        <h3>Claim/Observation form</h3>
-       {{=main_form}}
+       {{=claim_form}}
        {{=A(T("Enter New Claim/Observation"), _href=URL('arachadmin','claim','enter'), _class='btn',
             _style='margin-top: 1em;')}}
        <br/>
@@ -19,9 +19,12 @@
    </DIV>
    <DIV class="span6">
        <h3>Participant form</h3>
-      {{=participant_form}}
+       <DIV id="participant_head">
+	 {{=head_form}}
+       </DIV>
        <DIV class="pelement">
           <p id="active_element">
+	    {{=element_form}}
           </p>
        </DIV>
    </DIV>
