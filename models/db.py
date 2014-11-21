@@ -323,8 +323,9 @@ db.define_table('participant',
                       readable=False,
                       writable=False,
                       ondelete='NO ACTION'),
+                Field('publication_text', 'string', length=512),
                 format=render_participant,
-                migrate=False)
+                migrate=True)
 
 db.participant.taxon.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,
                                                      'term.id',
