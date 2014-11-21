@@ -59,32 +59,45 @@ def enter():
     """
     element_list = []
     edge_list = []
-    link_table = None
     add_d3_files()
     claim_arg, participant_arg = get_args(request)
     if claim_arg:
         link_table = make_link_table(db.claim(claim_arg))
+        claim_vars={'claim': claim_arg}
+    else:
+        link_table = []
+        claim_vars=None
+    if participant_arg:
+        participant_vars={'participant': participant_arg}
+        elements = db(db.participant_element.participant ==
+                      participant_arg).select()
+        claim = db.claim(claim_arg)
+        behavior = db.term(claim.behavior_term)
+        if elements and behavior:
+            (element_list, edge_list) = process_elements_and_links(behavior,elements)
+    else:
+        participant_vars=None
     claim_form_load = LOAD('claim',
                            'claim_form.load',
-                           vars={'claim': claim_arg},
+                           vars=claim_vars,
                            target='claim_form',
                            ajax=True,
                            content='loading claim editor')
-    participant_head_load = LOAD('participant',
-                                 'head_form.load',
-                                 target='participant_head',
-                                 vars={'participant': participant_arg},
-                                 ajax=True,
-                                 content='loading head editor')
-    participant_element_load = LOAD('participant',
-                                    'element_initial.load',
-                                    target='participant_element',
-                                    vars={'participant': participant_arg},
-                                    ajax=True,
-                                    content='loading element editor')
+    participant_load = LOAD('participant',
+                            'participant_form.load',
+                            target='participant_head',
+                            vars=participant_vars,
+                            ajax=True,
+                            content='loading participant editor')
+    element_load = LOAD('participant',
+                        'element_initial.load',
+                        target='participant_element',
+                        vars=participant_vars,
+                        ajax=True,
+                        content='loading element editor')
     return {'claim_form': claim_form_load,
-            'head_form': participant_head_load,
-            'element_form': participant_element_load,
+            'participant_form': participant_load,
+            'element_form': element_load,
             "link_table": link_table,
             "element_list": element_list,
             "edge_list": edge_list}
@@ -158,7 +171,6 @@ def get_args(req):
 
 
 def claim_form():
-    print request.vars
     claim = request.vars['claim']
     form = SQLFORM(db.claim, claim)
     if form.process().accepted:
@@ -167,7 +179,7 @@ def claim_form():
 
 
 def head_form():
-    partic = req.vars['participant']
+    partic = request.vars['participant']
     if partic is None:
         return  LOAD('participant',
                      'head_form.load',

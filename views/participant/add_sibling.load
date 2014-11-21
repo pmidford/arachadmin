@@ -1,0 +1,19 @@
+<h3>Participant Element</h3>
+Element is {{=etr}}
+<br/>
+{{=eform}}
+<br/>
+{{=add_buttons['child_button']}}
+{{=add_buttons['sibling_button']}}
+<div id="linkform"></div>
+<h3>Link table</h3>
+{{headers=['type','parent']}}
+{{=TABLE(
+         THEAD(TR(*[TH(header) for header in headers])),
+	 TBODY(*[TR(TD(A(row['property'], 
+                         callback=URL('elementlink', 
+                                      vars={'link_id': row['row_id']}), 
+                         target="linkform")),
+	           TD(row['parent']))
+         for row in lnt]))}}
+

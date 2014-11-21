@@ -15,11 +15,121 @@ def list():
     return {"items": result}
 
 
-def head_form():
-    return {}
+def participant_form():
+    print request.vars
+    if request.vars.participant is None:
+        return new_participant_form()
+    else:
+        form = SQLFORM(db.participant, request.vars.participant)
+        if form.process().accepted:
+            print request.vars.head
+        return {'form': form}
+
+
+def new_participant_form():
+    fields = make_initial_participant_fields()
+    fields.append(BR())
+    fields.append(INPUT(_type='submit'))
+    form=FORM(*fields)
+    if form.process().accepted:
+        part_type = form.vars.participant_type
+        pub_var = {'publication_text': form.vars.publication_string}
+        if pub_var == 'individual':
+            pass
+        else:  # assume term
+            term_participant_form = LOAD('participant',
+                                         'term_participant_form.load',
+                                         target='participant_head',
+                                         vars=pub_var,
+                                         ajax=True,
+                                         content='loading participant editor')
+            return {'form': term_participant_form}
+    return {'form': form}
+
+
+def make_initial_participant_fields():
+    return [DIV(FIELDSET('publication string',
+                         INPUT(_name='publication_string')),
+                BR()),
+            DIV('Choose term or individual participant',
+                BR(),
+                make_labeled_button('term', 'participant_type'),
+                BR(),
+                make_labeled_button('individual', 'participant_type'),
+                BR()),
+            DIV('Choose participant level',
+                BR(),
+                make_labeled_button('active participant', 'property'),
+                BR(),
+                make_labeled_button('participant', 'property'))]
+
+                     
+
+def make_labeled_button(val, group):
+    return FIELDSET(val,
+                    INPUT(_type='radio',
+                          _name=group,
+                          _value=val))
+
 
 def element_initial():
-    return {}
+    form=FORM(INPUT(_type='text',_name='element'),
+              BR(),
+              INPUT(_type='submit'))
+    if form.process().accepted:
+        print request.vars.element
+    return {'form': form}
+
+
+
+def term_participant_form():
+    form = FORM('Choose a domain',
+                make_labeled_button('taxonomy', 'domain'),
+                BR(),
+                make_labeled_button('anatomy', 'domain'),
+                BR(),
+                INPUT(_type='submit'))
+    if form.process().accepted:
+        pub_text = request.vars.publication_text
+        domain = form.vars.domain
+        domain_vars = {'publication_text': pub_text,
+                       'domain': domain}
+        term_from_domain_form = LOAD('participant',
+                                     'term_from_domain.load',
+                                     target='participant_head',
+                                     vars=domain_vars,
+                                     ajax=True,
+                                     content='loading participant editor')
+        return {'form': term_from_domain_form}
+    return {'form': form}
+
+
+def term_from_domain():
+    if request.vars.domain == 'taxonomy':
+        field_domain = taxon_domain
+    elif request.vars.domain == 'anatomy':
+        field_domain = anatomy_domain
+    else:
+        field_domain = term
+    form = SQLFORM.factory(Field('term',
+                                 'reference term',
+                                 requires=IS_EMPTY_OR(IS_IN_DB(field_domain,
+                                                               'term.id',
+                                                               '%(label)s'))))
+    if form.process().accepted:
+        part_type = form.vars.term
+        pub_var = {'publication_text': form.vars.publication_string}
+        if pub_var == 'individual':
+            pass
+        else:  # assume term
+            term_participant_form = LOAD('participant',
+                                         'term_participant_form.load',
+                                         target='participant_head',
+                                         vars=pub_var,
+                                         ajax=True,
+                                         content='loading participant editor')
+            return {'form': term_participant_form}
+    return form
 
 
 def enter():
