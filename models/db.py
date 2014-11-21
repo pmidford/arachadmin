@@ -157,6 +157,13 @@ db.define_table('property',
                 format='%(label)s',
                 migrate=False)
 
+# util; probably should be somewhere else
+
+def get_predicate(uri):
+    return db(db.property.source_id == uri).select().first()
+
+
+
 db.define_table('term',
                 Field('source_id', 'string'),
                 Field('authority',
@@ -290,8 +297,10 @@ def render_participant(r):
         head = "%s of %s" % (db.term(r.anatomy).label, db.term(r.taxon).label)
     elif r.taxon:
         head = str(db.term(r.taxon).label)
-    else:
+    elif r.substrate:
         head = str(db.term(r.substrate).label)
+    else:
+        head = "Undefined participant"
     return "%s %s" % (quan, head)
 
 VALID_QUANTIFICATIONS = ["some", "individual"]

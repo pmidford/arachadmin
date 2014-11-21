@@ -25,6 +25,9 @@ def participant_form():
             print request.vars.head
         return {'form': form}
 
+PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/BFO_0000056'
+ACTIVELY_PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/RO_0002217'
+
 
 def new_participant_form():
     fields = make_initial_participant_fields()
@@ -32,15 +35,24 @@ def new_participant_form():
     fields.append(INPUT(_type='submit'))
     form=FORM(*fields)
     if form.process().accepted:
+        claim_id = request.vars.claim
         part_type = form.vars.participant_type
-        pub_var = {'publication_text': form.vars.publication_string}
-        if pub_var == 'individual':
+        pub_text = form.vars.publication_string
+        property_name = form.vars.property
+        if property_name == 'active participant':
+            property = get_predicate(ACTIVELY_PARTICIPATES_IN_URI)
+        else:
+            property = get_predicate(PARTICIPATES_IN_URI)
+        var_set = {'publication_text': pub_text,
+                   'property': property.id,
+                   'claim': claim_id}
+        if part_type == 'individual':
             pass
         else:  # assume term
             term_participant_form = LOAD('participant',
                                          'term_participant_form.load',
                                          target='participant_head',
-                                         vars=pub_var,
+                                         vars=var_set,
                                          ajax=True,
                                          content='loading participant editor')
             return {'form': term_participant_form}
@@ -90,14 +102,22 @@ def term_participant_form():
                 BR(),
                 INPUT(_type='submit'))
     if form.process().accepted:
-        pub_text = request.vars.publication_text
+        claim_id = request.vars.claim
+        property_id = request.vars.property
+        pub_text = request.vars.publication_text        
         domain = form.vars.domain
-        domain_vars = {'publication_text': pub_text,
-                       'domain': domain}
+        assert pub_text is not None, 'pub text is None'
+        assert claim_id is not None, 'claim_id is None'
+        assert property_id is not None, 'property is None'
+        assert domain is not None, 'domain is None'
+        var_set = {'publication_text': pub_text,
+                   'domain': domain,
+                   'property': property_id,
+                   'claim': claim_id}
         term_from_domain_form = LOAD('participant',
                                      'term_from_domain.load',
                                      target='participant_head',
-                                     vars=domain_vars,
+                                     vars=var_set,
                                      ajax=True,
                                      content='loading participant editor')
         return {'form': term_from_domain_form}
@@ -117,18 +137,30 @@ def term_from_domain():
                                                                'term.id',
                                                                '%(label)s'))))
     if form.process().accepted:
-        part_type = form.vars.term
-        pub_var = {'publication_text': form.vars.publication_string}
-        if pub_var == 'individual':
-            pass
-        else:  # assume term
-            term_participant_form = LOAD('participant',
-                                         'term_participant_form.load',
-                                         target='participant_head',
-                                         vars=pub_var,
-                                         ajax=True,
-                                         content='loading participant editor')
-            return {'form': term_participant_form}
+        print request.vars
+        pub_text = request.vars.publication_text
+        claim_id = request.vars.claim
+        property_id = request.vars.property
+        term_id = form.vars.term
+        assert pub_text is not None, 'pub text is None'
+        assert claim_id is not None, 'claim_id is None'
+        assert property_id is not None, 'property is None'
+        assert term_id is not None, 'term_id is None'
+        new_part = db.participant.insert(publication_text=pub_text)
+        some_code = get_participant_code('some_term')
+        element_id = insert_participant_element(new_part, some_code)
+        head_id = insert_participant_head(element_id, claim_id, property_id)
+        insert_element2term_map(element_id, term_id)
+        db.participant2claim.insert(claim=claim_id,
+                                    participant=new_part,
+                                    participant_index=2)  # should fix
+        var_set = {'claim': claim_id,
+                   'participant': new_part}
+        return LOAD('participant',
+                    'participant_form.load',
+                    vars=var_set,
+                    ajax=True,
+                    content='reloading participant editor')
     return form
 
 
@@ -170,6 +202,11 @@ def enter():
         else:
             print "Fell through"
     return {'form': form}
+
+def insert_participant_head(head_ele, claim, prop):
+    db.participant_head.insert(head=head_ele,
+                               claim=claim,
+                               property=prop)
 
 
 

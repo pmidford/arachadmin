@@ -63,38 +63,41 @@ def enter():
     claim_arg, participant_arg = get_args(request)
     if claim_arg:
         link_table = make_link_table(db.claim(claim_arg))
-        claim_vars={'claim': claim_arg}
+        var_set={'claim': claim_arg}
     else:
         link_table = []
-        claim_vars=None
+        var_set={}
     if participant_arg:
-        participant_vars={'participant': participant_arg}
+        assert claim_arg is not None
+        var_set = {'participant': participant_arg,
+                   'claim': claim_arg}
         elements = db(db.participant_element.participant ==
                       participant_arg).select()
         claim = db.claim(claim_arg)
         behavior = db.term(claim.behavior_term)
         if elements and behavior:
             (element_list, edge_list) = process_elements_and_links(behavior,elements)
-    else:
-        participant_vars=None
     claim_form_load = LOAD('claim',
                            'claim_form.load',
-                           vars=claim_vars,
+                           vars=var_set,
                            target='claim_form',
                            ajax=True,
                            content='loading claim editor')
     participant_load = LOAD('participant',
                             'participant_form.load',
                             target='participant_head',
-                            vars=participant_vars,
+                            vars=var_set,
                             ajax=True,
                             content='loading participant editor')
-    element_load = LOAD('participant',
-                        'element_initial.load',
-                        target='participant_element',
-                        vars=participant_vars,
-                        ajax=True,
-                        content='loading element editor')
+    if participant_arg:
+        element_load = LOAD('participant',
+                            'element_initial.load',
+                            target='participant_element',
+                            vars=var_set,
+                            ajax=True,
+                            content='loading element editor')
+    else:
+        element_load = None
     return {'claim_form': claim_form_load,
             'participant_form': participant_load,
             'element_form': element_load,
@@ -360,6 +363,7 @@ def make_link_table(claim):
                 'participant_link': make_participant_url(claim.id, part)
                 }
         result.append(item)
+    print "table = {}".format(str(result))
     return result
 
 
@@ -474,10 +478,6 @@ def get_predicates():
     part_of_pred = get_predicate(PART_OF_URI)
     participates_in_pred = get_predicate(PARTICIPATES_IN_URI)
     return (part_of_pred, participates_in_pred)
-
-
-def get_predicate(uri):
-    return db(db.property.source_id == uri).select().first()
 
 
 def insert_participant_element(participant_id, type_id):
