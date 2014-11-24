@@ -342,6 +342,7 @@ def add_d3_files():
 def get_primary_participant(claim):
     """returns the participant row marked as the primary participant
        for the claim"""
+    # this needs attention
     rows = db((db.participant2claim.claim == claim.id) &
               (db.participant2claim.participant_index == 1)).select()
     assert len(rows) == 1
@@ -376,6 +377,13 @@ def update_tool():
      intersection_code,
      union_code) = get_participant_codes()
     (part_of, has_participant) = get_predicates()
+    db.pelement2term.truncate()
+    db.pelement2individual.truncate()
+    db.participant_head.truncate()
+    db(db.participant_element.id>2000).delete()
+    db(db.participant_link.id>50).delete()
+    db(db.participant.id>50).delete()
+    db(db.participant2claim.participant>50).delete()
     claims = db().select(db.claim.ALL, orderby=db.claim.id)
     for claim in claims:
         rows = db(db.participant2claim.claim == claim.id).select()
