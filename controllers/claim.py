@@ -4,6 +4,7 @@ occurances of behavior)"""
 
 PART_OF_URI = 'http://purl.obolibrary.org/obo/BFO_0000050'
 PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/BFO_0000056'
+ACTIVELY_PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/RO_0002217'
 
 
 def index():
@@ -57,26 +58,27 @@ def show():
 def enter():
     """
     """
-    element_list = []
-    edge_list = []
+    claim = None
+    behavior = None
     add_d3_files()
     claim_arg, participant_arg = get_args(request)
     if claim_arg:
         link_table = make_link_table(db.claim(claim_arg))
         var_set={'claim': claim_arg}
+        claim = db.claim(claim_arg)
+        behavior = db.term(claim.behavior_term)
+        elements = get_claim_elements(claim)
+        if elements and behavior:
+            (element_list, edge_list) = build_element_graph(behavior, elements)
     else:
+        element_list = []
+        edge_list = []
         link_table = []
         var_set={}
     if participant_arg:
         assert claim_arg is not None
         var_set = {'participant': participant_arg,
                    'claim': claim_arg}
-        elements = db(db.participant_element.participant ==
-                      participant_arg).select()
-        claim = db.claim(claim_arg)
-        behavior = db.term(claim.behavior_term)
-        if elements and behavior:
-            (element_list, edge_list) = process_elements_and_links(behavior,elements)
     claim_form_load = LOAD('claim',
                            'claim_form.load',
                            vars=var_set,
@@ -376,10 +378,9 @@ def update_tool():
      individual_code,
      intersection_code,
      union_code) = get_participant_codes()
-    (part_of, has_participant) = get_predicates()
+    (part_of, participates_in, actively_participates_in) = get_predicates()
     db.pelement2term.truncate()
     db.pelement2individual.truncate()
-    db.participant_head.truncate()
     db(db.participant_element.id>2000).delete()
     db(db.participant_link.id>50).delete()
     db(db.participant.id>50).delete()
@@ -400,7 +401,6 @@ def update_tool():
                         if (participant.quantification == 'some'):
                             tax_id = insert_participant_element(p_id,
                                                                 some_code)
-                            head_id = insert_participant_head(tax_id, claim.id)
                             insert_element2term_map(tax_id, participant.taxon)
                         elif (participant.quantification == 'individual'):
                             ind = lookup_individual(participant.label,
@@ -485,7 +485,8 @@ def get_term_label(term_id):
 def get_predicates():
     part_of_pred = get_predicate(PART_OF_URI)
     participates_in_pred = get_predicate(PARTICIPATES_IN_URI)
-    return (part_of_pred, participates_in_pred)
+    actively_participates_in_pred = get_predicate(ACTIVELY_PARTICIPATES_IN_URI)
+    return (part_of_pred, participates_in_pred, actively_participates_in_pred)
 
 
 def insert_participant_element(participant_id, type_id):
@@ -505,13 +506,6 @@ def insert_participant_link(parent_id, child_id, property_id):
     db.participant_link.insert(child=child_id,
                                parent=parent_id,
                                property=property_id)
-
-
-def insert_participant_head(head_ele, claim):
-    prop = get_predicate(PARTICIPATES_IN_URI)
-    db.participant_head.insert(head=head_ele,
-                               claim=claim,
-                               property=prop)
 
 
 def lookup_individual(label, term, narrative):
@@ -542,7 +536,16 @@ def insert_individual(label, term, narrative):
     return ind
 
 
-def process_elements_and_links(behavior, elements):
+def get_claim_elements(claim):
+    p2c_map = db(db.participant2claim.claim == claim).select()
+    participants = [row.participant for row in p2c_map]
+    result = []
+    for p in participants:
+        elements = db(db.participant_element.participant == p).select()
+        result.extend(elements)
+    return result
+
+def build_element_graph(behavior, elements):
     """this generates lists of elements and edges"""
     behavior_id = behavior.id
     behavior_entry = (reduce_label(behavior.label), -1)
@@ -556,6 +559,7 @@ def process_elements_and_links(behavior, elements):
     for element in elements:
         edges = process_p_link(element.id, element_ids)
         edge_list.extend(edges)
+    edge_list.append((0,1,'green'))
     print "links = {0}".format(str(edge_list))
     return (element_list, edge_list)
 
@@ -582,11 +586,11 @@ def reduce_label(label):
     return '_'.join(words)
 
 
-def process_p_link(participant_id, id_list):
+def process_p_link(element_id, id_list):
     """returns list of pairs of child and parent elements at ends of link;
        these are coded by their position in the id_list, which seems to
        be what the d3 code wants to see"""
-    links = db(db.participant_link.child == participant_id).select()
+    links = db(db.participant_link.child == element_id).select()
     result = []
     for link in links:
         child = link.child
@@ -598,10 +602,13 @@ def process_p_link(participant_id, id_list):
     return result
 
 
+
 def property_color_lookup(property):
     source_id = db.property(property).source_id
     if source_id == "http://purl.obolibrary.org/obo/BFO_0000050":
         return "blue"
+    elif source_id == PARTICIPATES_IN_URI:
+        return 'red'
     else:
         return "black"
 
