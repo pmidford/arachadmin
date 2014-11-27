@@ -66,10 +66,7 @@ def enter():
         link_table = make_link_table(db.claim(claim_arg))
         var_set={'claim': claim_arg}
         claim = db.claim(claim_arg)
-        behavior = db.term(claim.behavior_term)
-        elements = get_claim_elements(claim)
-        if elements and behavior:
-            (element_list, edge_list) = build_element_graph(behavior, elements)
+        (element_list, edge_list) = build_element_graph(claim)
     else:
         element_list = []
         edge_list = []
@@ -379,12 +376,6 @@ def update_tool():
      intersection_code,
      union_code) = get_participant_codes()
     (part_of, participates_in, actively_participates_in) = get_predicates()
-    db.pelement2term.truncate()
-    db.pelement2individual.truncate()
-    db(db.participant_element.id>2000).delete()
-    db(db.participant_link.id>50).delete()
-    db(db.participant.id>50).delete()
-    db(db.participant2claim.participant>50).delete()
     claims = db().select(db.claim.ALL, orderby=db.claim.id)
     for claim in claims:
         rows = db(db.participant2claim.claim == claim.id).select()
@@ -421,7 +412,8 @@ def update_tool():
                                                                 some_code)
                             insert_element2term_map(ana_id,
                                                     participant.anatomy)
-                            insert_participant_link(tax_id, ana_id, part_of.id)
+                            insert_participant_link(ana_id, tax_id, part_of.id)
+                            participant.update_record(head_element=ana_id)
                         elif (participant.quantification == 'individual'):
                             ana_label = get_term_label(participant.anatomy)
                             ind_label = ana_label + " of " + participant.label
@@ -435,7 +427,8 @@ def update_tool():
                             ana_id = insert_participant_element(p_id,
                                                                 individual_code)
                             insert_element2indiv_map(ana_id, ind)
-                            insert_participant_link(tax_id, ana_id, part_of.id)
+                            insert_participant_link(ana_id, tax_id, part_of.id)
+                            participant.update_record(head_element=ana_id)
                         else:
                             print "participant %d has no anatomy" % p_id
                     if participant.substrate:
@@ -495,16 +488,20 @@ def insert_participant_element(participant_id, type_id):
 
 
 def insert_element2term_map(ele_id, term_id):
-    db.pelement2term.insert(element=ele_id, term=term_id)
+    print 'Inserting %d to term %d' % (ele_id, term_id)
+    foo =db.pelement2term.insert(element=ele_id, term=term_id)
+    db.commit()
+    print db.pelement2term[foo]
+    print 'Done Inserting %d to term %d to %d' % (ele_id, term_id, foo)
 
 
 def insert_element2indiv_map(ele_id, indiv_id):
     db.pelement2individual.insert(element=ele_id, individual=indiv_id)
-
+    db.commit()
 
 def insert_participant_link(parent_id, child_id, property_id):
-    db.participant_link.insert(child=child_id,
-                               parent=parent_id,
+    db.participant_link.insert(parent=parent_id,
+                               child=child_id,
                                property=property_id)
 
 
@@ -536,30 +533,29 @@ def insert_individual(label, term, narrative):
     return ind
 
 
-def get_claim_elements(claim):
-    p2c_map = db(db.participant2claim.claim == claim).select()
-    participants = [row.participant for row in p2c_map]
-    result = []
-    for p in participants:
-        elements = db(db.participant_element.participant == p).select()
-        result.extend(elements)
-    return result
-
-def build_element_graph(behavior, elements):
+def build_element_graph(claim):
     """this generates lists of elements and edges"""
+    behavior = db.term(claim.behavior_term)
     behavior_id = behavior.id
     behavior_entry = (reduce_label(behavior.label), -1)
+    p2c_map = db(db.participant2claim.claim == claim).select()
+    participants = [row.participant for row in p2c_map]
+    elements = []
+    for p in participants:
+        elist = db(db.participant_element.participant == p).select()
+        print "elist: %s" % str(elist)
+        elements.extend(elist)
+    print "elements: %s" % elements
+    element_list = []
+    edge_list = []
     element_ids = [element.id for element in elements]
     element_labels = [process_p_element(element.id) for element in elements]
     element_ids.insert(0, behavior_id)
     element_labels.insert(0, behavior_entry)
-    print "{}; {}".format(str(element_ids), str(element_labels))
-    element_list = element_labels
-    edge_list = []
-    for element in elements:
-        edges = process_p_link(element.id, element_ids)
-        edge_list.extend(edges)
-    edge_list.append((0,1,'green'))
+    element_list.extend(element_labels)
+    for p in participants:
+        edge_list.extend(build_edges(element_ids, db.participant[p].head_element))
+    print "elements = {0}".format(str(element_list))
     print "links = {0}".format(str(edge_list))
     return (element_list, edge_list)
 
@@ -586,11 +582,36 @@ def reduce_label(label):
     return '_'.join(words)
 
 
+def build_edges(elements, head_element):
+    from collections import deque
+    print "entering build_edges"
+    eque = deque()
+    eque.append(head_element)
+    done = set()
+    results = [(0,elements.index(head_element), "green")]
+    print "q is %s" % str(eque)
+    while len(eque)>0:
+        print "q is %s" % str(eque)
+        parent = eque.popleft()
+        if parent not in done:
+            links = db(db.participant_link.parent == parent).select()
+            print "links = %s" % repr(links)
+            for link in links:
+                child = link.child
+                property_color = property_color_lookup(link.property)
+                child_index = elements.index(child)
+                parent_index = elements.index(parent)
+                results.append((child_index, parent_index, property_color))
+                eque.append(child)
+            done.add(parent)
+    return results
+
+
 def process_p_link(element_id, id_list):
     """returns list of pairs of child and parent elements at ends of link;
        these are coded by their position in the id_list, which seems to
        be what the d3 code wants to see"""
-    links = db(db.participant_link.child == element_id).select()
+    links = db(db.participant_link.parent == element_id).select()
     result = []
     for link in links:
         child = link.child
