@@ -210,18 +210,10 @@ db.define_table('participant_element',
                 migrate=False)
 
 db.define_table('participant_link',
-                Field('child', 'reference participant_element'),
-                Field('parent', 'reference participant_element'),
+                Field('child', 'reference participant_element', ondelete='SET NULL'),
+                Field('parent', 'reference participant_element', ondelete='SET NULL'),
                 Field('property', 'reference property', ondelete='NO ACTION'),
                 migrate=False)
-
-
-db.define_table('participant_head',
-                Field('head', 'reference participant_element'),
-                Field('claim', 'reference claim', ondelete='NO ACTION'),
-                Field('property', 'reference property', ondelete='NO ACTION'),
-                migrate=False)
-
 
 db.define_table('pelement2term',
                 Field('element',
@@ -333,6 +325,10 @@ db.define_table('participant',
                       writable=False,
                       ondelete='NO ACTION'),
                 Field('publication_text', 'string', length=512),
+                Field('participation_property', 'reference property'),
+                Field('head_element',
+                      'reference participant_element',
+                      writable=False),
                 format=render_participant,
                 migrate=True)
 
