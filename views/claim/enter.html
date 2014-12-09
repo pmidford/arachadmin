@@ -9,12 +9,12 @@
             _style='margin-top: 1em;')}}
        <br/>
        <h3>Table of associated participants</h3>
-      {{headers=['claim','participant','index']}}
+      {{headers=['claim','participant','predicate']}}
       {{=TABLE(
          THEAD(TR(*[TH(header) for header in headers])),
          TBODY(*[TR(TD(row['claim']),
                     TD(A(row['participant'],_href=row['participant_link'])),
-                    TD(row['index']))
+                    TD(row['property']))
          for row in link_table]))}}
    </DIV>
    <DIV class="span6">
