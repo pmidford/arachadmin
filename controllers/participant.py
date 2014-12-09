@@ -30,12 +30,13 @@ ACTIVELY_PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/RO_0002217'
 
 
 def new_participant_form():
-    fields = make_initial_participant_fields()
+    """initial form for creating a participant - used by new claim editor"""
+    claim_id = request.vars.claim
+    fields = make_initial_participant_fields(claim_id)
     fields.append(BR())
     fields.append(INPUT(_type='submit'))
     form=FORM(*fields)
     if form.process().accepted:
-        claim_id = request.vars.claim
         part_type = form.vars.participant_type
         pub_text = form.vars.publication_string
         property_name = form.vars.property
@@ -47,7 +48,13 @@ def new_participant_form():
                    'property': property.id,
                    'claim': claim_id}
         if part_type == 'individual':
-            pass
+            ind_participant_form = LOAD('participant',
+                                         'individual_participant_form.load',
+                                         target='participant_head',
+                                         vars=var_set,
+                                         ajax=True,
+                                         content='loading participant editor')
+            return {'form': ind_participant_form}
         else:  # assume term
             term_participant_form = LOAD('participant',
                                          'term_participant_form.load',
@@ -59,7 +66,14 @@ def new_participant_form():
     return {'form': form}
 
 
-def make_initial_participant_fields():
+def make_initial_participant_fields(claim):
+    narrative = claim and db.claim(claim).narrative
+    if narrative:
+        return make_initial_term_individual_fields()
+    else:
+        return make_initial_term_only_fields()
+
+def make_initial_term_individual_fields():
     return [DIV(FIELDSET('publication string',
                          INPUT(_name='publication_string')),
                 BR()),
@@ -75,6 +89,17 @@ def make_initial_participant_fields():
                 BR(),
                 make_labeled_button('participant', 'property'))]
 
+def make_initial_term_only_fields():
+    return [DIV(FIELDSET('publication string',
+                         INPUT(_name='publication_string')),
+                BR()),
+            P('Claim is not part of narrative, individuals not available'),
+            DIV('Choose participant level',
+                BR(),
+                make_labeled_button('active participant', 'property'),
+                BR(),
+                make_labeled_button('participant', 'property'))]
+    
                      
 
 def make_labeled_button(val, group):
@@ -91,7 +116,6 @@ def element_initial():
     if form.process().accepted:
         print request.vars.element
     return {'form': form}
-
 
 
 def term_participant_form():
@@ -149,11 +173,10 @@ def term_from_domain():
         new_part = db.participant.insert(publication_text=pub_text)
         some_code = get_participant_code('some_term')
         element_id = insert_participant_element(new_part, some_code)
-        head_id = insert_participant_head(element_id, claim_id, property_id)
         insert_element2term_map(element_id, term_id)
         db.participant2claim.insert(claim=claim_id,
                                     participant=new_part,
-                                    participant_index=2)  # should fix
+                                    property=property_id)
         var_set = {'claim': claim_id,
                    'participant': new_part}
         return LOAD('participant',
@@ -162,6 +185,41 @@ def term_from_domain():
                     ajax=True,
                     content='reloading participant editor')
     return form
+
+
+def individual_participant_form():
+    claim_id = request.vars.claim
+    sel = build_individual_list(claim)
+    form = FORM('Choose an individual',
+                BR(),
+                sel,
+                BR(),
+                INPUT(_type='submit'))
+    if form.process().accepted:
+        property_id = request.vars.property
+        pub_text = request.vars.publication_text
+        ind_id = form.vars.ind_choice
+        new_part = db.participant.insert(publication_text=pub_text)
+        individual_code = get_participant_code('individual')
+        element_id = insert_participant_element(new_part, individual_code)
+        insert_element2term_map(element_id, ind_id)
+        db.participant2claim.insert(claim=claim_id,
+                                    participant=new_part,
+                                    property=property_id)
+        
+        print "form vars: %s" % repr(form.vars.ind_choice)
+    return {'form': form}
+
+
+def build_individual_list(claim_id):
+    narrative = db.claim(claim_id).narrative
+    i2n_map = db(db.individual2narrative.narrative == narrative).select()
+    individual_ids = [map.individual for map in i2n_map]
+    individual_labels = [db.individual(ind_id).label for ind_id in individual_ids]
+    result = []
+    for pair in zip(individual_ids,individual_labels):
+        result.append(OPTION(pair[1],_value=pair[0]))
+    return SELECT(name='choose an individual', _name='ind_choice', *result)
 
 
 def enter():
@@ -202,29 +260,6 @@ def enter():
         else:
             print "Fell through"
     return {'form': form}
-
-def insert_participant_head(head_ele, claim, prop):
-    db.participant_head.insert(head=head_ele,
-                               claim=claim,
-                               property=prop)
-
-
-
-# def enter():
-#     """
-#     provides a form for creating/editing a narrative record
-#     """
-#    if request.args(0):
-#        participant = db.participant(request.args(0, cast=int))
-#        form = SQLFORM(db.participant, participant)
-#    else:
-#        form = SQLFORM(db.participant)
-#    if form.process().accepted:
-#        response.flash = 'participant table modified'
-#    elif form.errors:
-#        response.flash = 'errors in submission'
-#    return {'form': form}
-
 
 def get_element_args(req):
     """ """
