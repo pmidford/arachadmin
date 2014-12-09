@@ -56,7 +56,8 @@ def show():
 
 
 def enter():
-    """
+    """drives loading of several form components to enable editing of
+    claims and participants
     """
     claim = None
     behavior = None
@@ -105,57 +106,6 @@ def enter():
             "edge_list": edge_list}
 
 
-def old_enter():
-    """
-    """
-    element_list = []
-    edge_list = []
-    add_d3_files()
-    claim_arg, participant_arg = get_args(request)
-    if claim_arg and participant_arg:
-        claim = db.claim(claim_arg)
-        participant = db.participant(participant_arg)
-        link_table = make_link_table(claim)
-        main_form = SQLFORM(db.claim, claim)
-        participant_form = make_participant_form(participant_arg)
-        elements = db(db.participant_element.participant ==
-                      participant.id).select()
-        behavior = db(db.term.id == claim.behavior_term).select().first()
-        if elements:
-            (element_list, edge_list) = process_elements_and_links(behavior,
-                                                                   elements)
-    elif claim_arg:
-        claim = db.claim(claim_arg)
-        link_table = make_link_table(claim)
-        main_form = SQLFORM(db.claim, claim)
-        participant_form = make_participant_form()
-    else:
-        main_form = SQLFORM(db.claim)
-        participant_form = make_participant_form()
-        link_table = []
-    if main_form.process().accepted:
-        claim = main_form.vars.id
-        redirect(URL('claim', 'enter/' + str(claim)))
-        response.flash = 'claim table modified'
-    elif main_form.errors:
-        response.flash = 'errors in claim submission'
-    print "Checkpoint -1"
-    print participant_form.vars
-    if participant_form.process().accepted:
-        participant_form, flash = update_participant_head_form(claim, participant_form)
-        print "Checkpoint 0"
-        print participant_form
-        if flash:
-            response.flash = flash
-    elif participant_form.errors:
-        response.flash = 'errors in participant submission'
-    return {"main_form": main_form,
-            "participant_form": participant_form,
-            "link_table": link_table,
-            "element_list": element_list,
-            "edge_list": edge_list}
-
-
 def get_args(req):
     if req.args(0):
         claim = req.args(0, cast=int)
@@ -183,12 +133,12 @@ def claim_form():
 def head_form():
     partic = request.vars['participant']
     if partic is None:
-        return  LOAD('participant',
-                     'head_form.load',
-                     target='participant_head',
-                     vars={'participant': participant_arg},
-                     ajax=True,
-                     content='loading head editor')
+        return LOAD('participant',
+                    'head_form.load',
+                    target='participant_head',
+                    vars={'participant': participant_arg},
+                    ajax=True,
+                    content='loading head editor')
     else:
         form = SQLFORM(db.participant, partic)
         if form.process().accepted:
@@ -196,22 +146,8 @@ def head_form():
         return {'form': form}
 
 
-def head_form_initial():
-    """generates and handles to start building a participant"""
-    form = FORM(INPUT(_type='text',_name='head'),
-                BR(),
-                INPUT(_type='submit'))
-    if form.process().accepted:
-        print request.vars.head
-    return {'form': form}
-
-
-
-
 def update_participant_head_form(claim, participant_form):
-    print "Checkpoint 1"
     if claim:
-        print "Checkpoint 2"
         flash = None
         print participant_form.vars
         if participant_form.vars.domain:
@@ -219,7 +155,6 @@ def update_participant_head_form(claim, participant_form):
             pub_str = participant_form.vars.publication_string
             part_type = participant_form.vars.participant_type
             new_form = head_domain_form(pub_str, part_type, domain_str)
-            print "Want to select a term from domain {0}".format(domain_str)
         else:
             pub_str = participant_form.vars.publication_string
             part_type = participant_form.vars.participant_type
@@ -232,7 +167,6 @@ def update_participant_head_form(claim, participant_form):
     else:
         flash = 'error: no claim to link participant to'
     return (new_form, flash)
-
 
 
 def make_participant_form(id=None):
@@ -307,30 +241,6 @@ def make_initial_participant_fields(pubstr, p_type=None):
                            _value='individual'))]
 
 
-def finish_participant_head():
-    """needs lots of work"""
-    participant_id = participant_form.vars.id
-    existing_links = db((db.participant2claim.claim ==
-                         claim.id) &
-                        (db.participant2claim.participant ==
-                         participant_id)).select()
-    other_links = db(db.participant2claim.claim == claim).select()
-    if existing_links:
-        response.flash = 'participant updated'
-    else:
-        if other_links:
-            part_index = len(other_links)+1
-            response.flash = 'new participant added to table'
-        else:
-            part_index = 1
-            response.flash = 'participant table modified'
-        db.participant2claim.insert(claim=claim,
-                                    participant=participant_id,
-                                    participant_index=part_index)
-    link_table = make_link_table(claim)
-    return link_table
-
-
 def add_d3_files():
     """adds files related to d3 to the list that is loaded with the entry
     page.  Needed since d3 is used for element display."""
@@ -339,13 +249,19 @@ def add_d3_files():
 
 
 def get_primary_participant(claim):
-    """returns the participant row marked as the primary participant
-       for the claim"""
-    # this needs attention
+    """returns an arbitrary active participant if any exist, or 
+       another participant if any exist for this claim"""
+    properties = get_properties()
+    actively = properties['actively_participates_in']
     rows = db((db.participant2claim.claim == claim.id) &
-              (db.participant2claim.participant_index == 1)).select()
-    assert len(rows) == 1
-    return rows[0].participant
+              (db.participant2claim.property == actively)).select()
+    if len(rows) > 0:
+        return rows[0].participant
+    else:
+        participates = properties['participates_in']
+        rows = db((db.participant2claim.claim == claim.id) &
+                  (db.participant2claim.property == participates)).select()
+        return rows[0].participant
 
 
 def make_link_table(claim):
@@ -357,8 +273,10 @@ def make_link_table(claim):
     result = []
     for row in rows:
         part = row.participant
+        print "row.id: {}".format(row.id)
+        print "row.property: {}".format(row.property)
         item = {'claim': row.claim,
-                'index': row.participant_index,
+                'property': db.property(row.property).label,
                 'participant': render_participant(db.participant(part)),
                 'participant_link': make_participant_url(claim.id, part)
                 }
@@ -375,7 +293,7 @@ def update_tool():
      individual_code,
      intersection_code,
      union_code) = get_participant_codes()
-    (part_of, participates_in, actively_participates_in) = get_predicates()
+    properties = get_properties()
     claims = db().select(db.claim.ALL, orderby=db.claim.id)
     for claim in claims:
         rows = db(db.participant2claim.claim == claim.id).select()
@@ -387,7 +305,6 @@ def update_tool():
                 if len(elements) == 0:
                     tax_id = None
                     ana_id = None
-                    sub_id = None
                     if participant.taxon:
                         if (participant.quantification == 'some'):
                             tax_id = insert_participant_element(p_id,
@@ -412,7 +329,9 @@ def update_tool():
                                                                 some_code)
                             insert_element2term_map(ana_id,
                                                     participant.anatomy)
-                            insert_participant_link(ana_id, tax_id, part_of.id)
+                            insert_participant_link(ana_id, 
+                                                    tax_id, 
+                                                    properties['part_of'])
                             participant.update_record(head_element=ana_id)
                         elif (participant.quantification == 'individual'):
                             ana_label = get_term_label(participant.anatomy)
@@ -427,16 +346,21 @@ def update_tool():
                             ana_id = insert_participant_element(p_id,
                                                                 individual_code)
                             insert_element2indiv_map(ana_id, ind)
-                            insert_participant_link(ana_id, tax_id, part_of.id)
+                            insert_participant_link(ana_id, 
+                                                    tax_id, 
+                                                    properties['part_of'])
                             participant.update_record(head_element=ana_id)
                         else:
                             print "participant %d has no anatomy" % p_id
-                    if participant.substrate:
-                        # assume for now that substrates are always some expressions
-                        substrate_element(participant.substrate, p_id)
-                    elements = get_elements(p_id)
-                else:
-                    print "participant has existing elements, not updated"
+                # print "anatomy/taxon participant has existing elements, not updated"
+                if participant.substrate:
+                    print "found substrate"
+                    if not(check_existing_substrate(claim.id)):
+                    # assume for now that substrates are always some expressions
+                        substrate_element(participant.substrate, claim.id)
+                    else:
+                        print "substrate participant exists, no updated"
+                elements = get_elements(p_id)
                 result.append((p_id, len(elements)))
     return {'update_report': result}
 
@@ -446,12 +370,25 @@ def get_elements(p_id):
     return db(db.participant_element.participant == p_id).select()
 
 
-def substrate_element(sub_term, p_id):
+def check_existing_substrate(claim_id):
+    p_list = db(db.participant2claim.claim==claim_id).select()
+    print "in check existing_substrate"
+    print p_list
+    return len(p_list) == 2
+
+
+def substrate_element(sub_term, claim_id):
     # sub_expr is term id of substrate
     some_code = get_participant_code('some_term')
-    print "substrate assumes some quantified"
-    sub_id = insert_participant_element(p_id, some_code)
-    insert_element2term_map(sub_id, sub_term)
+    property_id = get_properties()['participates_in']
+    new_part = db.participant.insert()
+    element_id = insert_participant_element(new_part, some_code)
+    participant = db.participant(new_part)
+    participant.update_record(head_element=element_id)
+    insert_element2term_map(element_id, sub_term)
+    db.participant2claim.insert(claim=claim_id,
+                                participant=new_part,
+                                property=property_id)
 
 
 def get_participant_codes():
@@ -475,11 +412,15 @@ def get_term_label(term_id):
     return db(db.term.id == term_id).select().first().label
 
 
-def get_predicates():
-    part_of_pred = get_predicate(PART_OF_URI)
-    participates_in_pred = get_predicate(PARTICIPATES_IN_URI)
-    actively_participates_in_pred = get_predicate(ACTIVELY_PARTICIPATES_IN_URI)
-    return (part_of_pred, participates_in_pred, actively_participates_in_pred)
+PROPERTY_CACHE = {}
+def get_properties():
+    if PROPERTY_CACHE:
+        return PROPERTY_CACHE
+    else:
+        PROPERTY_CACHE['part_of'] = get_property(PART_OF_URI)
+        PROPERTY_CACHE['participates_in'] = get_property(PARTICIPATES_IN_URI)
+        PROPERTY_CACHE['actively_participates_in'] = get_property(ACTIVELY_PARTICIPATES_IN_URI)
+    return PROPERTY_CACHE
 
 
 def insert_participant_element(participant_id, type_id):
@@ -540,6 +481,7 @@ def build_element_graph(claim):
     behavior_entry = (reduce_label(behavior.label), -1)
     p2c_map = db(db.participant2claim.claim == claim).select()
     participants = [row.participant for row in p2c_map]
+    print "participants = {}".format(str(participants))
     elements = []
     for p in participants:
         elist = db(db.participant_element.participant == p).select()
@@ -554,7 +496,10 @@ def build_element_graph(claim):
     element_labels.insert(0, behavior_entry)
     element_list.extend(element_labels)
     for p in participants:
-        edge_list.extend(build_edges(element_ids, db.participant[p].head_element))
+        p_property = db((db.participant2claim.participant == p) &
+                        (db.participant2claim.claim == 
+                         claim.id)).select().first().property
+        edge_list.extend(build_edges(element_ids, p, p_property))
     print "elements = {0}".format(str(element_list))
     print "links = {0}".format(str(edge_list))
     return (element_list, edge_list)
@@ -582,13 +527,14 @@ def reduce_label(label):
     return '_'.join(words)
 
 
-def build_edges(elements, head_element):
+def build_edges(elements, p_id, p_property):
     from collections import deque
     print "entering build_edges"
+    head_element = db.participant[p_id].head_element
     eque = deque()
     eque.append(head_element)
     done = set()
-    results = [(0,elements.index(head_element), "green")]
+    results = [(0, elements.index(head_element), property_color_lookup(p_property))]
     print "q is %s" % str(eque)
     while len(eque)>0:
         print "q is %s" % str(eque)
@@ -598,12 +544,14 @@ def build_edges(elements, head_element):
             print "links = %s" % repr(links)
             for link in links:
                 child = link.child
+                print "link.property {}".format(link.property)
                 property_color = property_color_lookup(link.property)
                 child_index = elements.index(child)
                 parent_index = elements.index(parent)
                 results.append((child_index, parent_index, property_color))
                 eque.append(child)
             done.add(parent)
+    print "part_of id {}".format(get_properties()['part_of'])
     return results
 
 
@@ -623,16 +571,19 @@ def process_p_link(element_id, id_list):
     return result
 
 
+PROPERTY_COLORS = {}
 
-def property_color_lookup(property):
-    source_id = db.property(property).source_id
-    if source_id == "http://purl.obolibrary.org/obo/BFO_0000050":
-        return "blue"
-    elif source_id == PARTICIPATES_IN_URI:
-        return 'red'
+def property_color_lookup(property_id):
+    if not(PROPERTY_COLORS):
+        properties = get_properties()
+        print "prop = {0}, properties = {1}".format(property_id, repr(properties))
+        PROPERTY_COLORS[properties['part_of']] = 'blue'
+        PROPERTY_COLORS[properties['participates_in']] = 'orange'
+        PROPERTY_COLORS[properties['actively_participates_in']] = 'red'
+    if property_id in PROPERTY_COLORS:
+        return PROPERTY_COLORS[property_id]
     else:
-        return "black"
-
+        return 'black'
 
 def status_tool():
     """Scans the set of claims in the database and generates
