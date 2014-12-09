@@ -159,9 +159,8 @@ db.define_table('property',
 
 # util; probably should be somewhere else
 
-def get_predicate(uri):
-    return db(db.property.source_id == uri).select().first()
-
+def get_property(uri):
+    return db(db.property.source_id == uri).select().first().id
 
 
 db.define_table('term',
@@ -371,7 +370,7 @@ db.claim.behavior_term.requires = IS_EMPTY_OR(IS_IN_DB(behavior_domain,
 db.define_table('participant2claim',
                 Field('claim', 'reference claim'),
                 Field('participant', 'reference participant'),
-                Field('participant_index', 'integer'),
+                Field('property', 'reference property'),
                 migrate=False)
 
 
