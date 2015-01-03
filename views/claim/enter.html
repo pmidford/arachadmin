@@ -130,6 +130,9 @@
    }
 
     $(document).ready(function(){
+       {{if len(element_list)>0:}}
+          ajax("{{=URL('participant','pelement.load',args=element_list[0][1])}}" , '', 'active_element');
+          {{pass}}
        {{for count in xrange(ele_count):}}
            {{gen_click(count)}}
            {{if count<(ele_count-1):}} , {{pass}}

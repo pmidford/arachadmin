@@ -110,6 +110,7 @@ def make_labeled_button(val, group):
 
 
 def element_initial():
+    print("hit element_initial")
     form=FORM(INPUT(_type='text',_name='element'),
               BR(),
               INPUT(_type='submit'))
@@ -274,8 +275,10 @@ def get_element_args(req):
 
 def pelement():
     ele = get_element_args(request)
+    print "entering pelement"
     if ele:
         if ele > 0:
+            etype = 'participant'
             eler = db.participant_element[ele]
             print "eler is %s" % repr(eler)
             lnr = db(db.participant_link.child == ele).select()
@@ -300,23 +303,57 @@ def pelement():
                             record=ele,
                             fields=['type'],
                             showid=False)
-            add_buttons = _build_buttons(ele)
+            add_buttons = _build_element_buttons(ele)
         else:  # should be behavior term; treat as claim
             print "hit claim"
+            etype = 'head'
             # LOAD(f="add_participant_click", target='add_element')
-            return None
+            claim_id = -1*ele
+            claim_r = db.claim(claim_id)
+            print "claim_r is %s" % repr(claim_r)
+            behavior_id = claim_r['behavior_term']
+            behavior_term = db.term[behavior_id]
+            print "behavior_term is %s" % repr(behavior_term)
+            lnr = None # db(db.participant_link.child == ele).select()
+            print "lnr is %s" % repr(lnr)
+            lnt = None # make_element_link_table(lnr)
+            print "lnt is %s" % repr(lnt)
+            etx = None # lookup_pelement_term_map(ele)
+            if etx:
+                ee = etx['term']
+                etl = db.term[ee].label
+            else:
+                etx = None # lookup_pelement_individual_map(ele)
+                if etx:
+                    ee = etx['individual']
+                    etl = db.individual[ee].label
+                else:
+                    ee = None
+                    etl = None
+            part_row = "" # render_participant(db.participant[eler.participant])
+            print "etr is %s " % repr(ee)
+            eform = None # SQLFORM(db.participant_element,
+                         #   record=ele,
+                         #   fields=['type'],
+                         #   showid=False)
+            foo = _build_head_buttons(claim_id)
+            add_buttons = _build_head_buttons(claim_id)
+            print("head buttons: %s".format(claim_id))
     else:  # maybe make this never happend
         eform = SQLFORM(db.participant_element)
+    
+    result = dict(etype=etype,
+                  ele=ele,
+                  epart=part_row,
+                  etr=etl,
+                  eform=eform,
+                  lnt=lnt,
+                  add_buttons=add_buttons)
+    print "result is {0}".format(repr(result))
+    return result
 
-    return dict(ele=ele,
-                epart=part_row,
-                etr=etl,
-                eform=eform,
-                lnt=lnt,
-                add_buttons=add_buttons)
 
-
-def _build_buttons(element):
+def _build_element_buttons(element):
     return {"child_button":
             A(T("Add Child"),
               callback=URL('add_child/' + str(element)),
@@ -326,6 +363,14 @@ def _build_buttons(element):
             "sibling_button":
             A(T("Add Sibling"),
               callback=URL('add_sibling/' + str(element)),
+              target="active_element",
+              _class='btn',
+              _style='margin-top: 1em;')}
+
+def _build_head_buttons(claim):
+    return {"child_button":
+            A(T("Add Child"),
+              callback=URL('add_child/' + str(claim)),
               target="active_element",
               _class='btn',
               _style='margin-top: 1em;')}
@@ -541,7 +586,7 @@ def finish_child():
                     record=ele,
                     fields=['type'],
                     showid=False)
-    add_buttons = _build_buttons(ele)
+    add_buttons = _build_element_buttons(ele)
     return dict(ele=ele,
                 epart="test_row",  # part_row,
                 etr=entity_label,
