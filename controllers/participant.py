@@ -16,54 +16,61 @@ def list():
 
 
 def participant_form():
-    print request.vars
+    print "request.vars = {0}".format(repr(request.vars))
     if request.vars.participant is None:
-        return new_participant_form()
-    else:
-        form = SQLFORM(db.participant, request.vars.participant)
-        if form.process().accepted:
-            print request.vars.head
-        return {'form': form}
+        form = gen_new_participant_form()
+    else: 
+        form = SQLFORM(db.participant, request.vars.participant) 
+    if form.process().accepted:
+        if request.vars.participant is None:
+            process_new_participant_form(form)
+    return form
 
-PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/BFO_0000056'
-ACTIVELY_PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/RO_0002217'
-
-
-def new_participant_form():
+def gen_new_participant_form():
     """initial form for creating a participant - used by new claim editor"""
     claim_id = request.vars.claim
     fields = make_initial_participant_fields(claim_id)
     fields.append(BR())
     fields.append(INPUT(_type='submit'))
-    form=FORM(*fields)
-    if form.process().accepted:
-        part_type = form.vars.participant_type
-        pub_text = form.vars.publication_string
-        property_name = form.vars.property
-        if property_name == 'active participant':
-            property = get_predicate(ACTIVELY_PARTICIPATES_IN_URI)
-        else:
-            property = get_predicate(PARTICIPATES_IN_URI)
-        var_set = {'publication_text': pub_text,
-                   'property': property.id,
-                   'claim': claim_id}
-        if part_type == 'individual':
-            ind_participant_form = LOAD('participant',
-                                         'individual_participant_form.load',
-                                         target='participant_head',
-                                         vars=var_set,
-                                         ajax=True,
-                                         content='loading participant editor')
-            return {'form': ind_participant_form}
-        else:  # assume term
-            term_participant_form = LOAD('participant',
-                                         'term_participant_form.load',
-                                         target='participant_head',
-                                         vars=var_set,
-                                         ajax=True,
-                                         content='loading participant editor')
-            return {'form': term_participant_form}
-    return {'form': form}
+    return FORM(*fields)
+
+
+PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/BFO_0000056'
+ACTIVELY_PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/RO_0002217'
+
+
+def process_new_participant_form(form):
+    """initial form for creating a participant - used by new claim editor"""
+    part_type = form.vars.participant_type
+    pub_text = form.vars.publication_string
+    property_name = form.vars.property
+    if property_name == 'active participant':
+        property = get_property(ACTIVELY_PARTICIPATES_IN_URI)
+    else:
+        property = get_property(PARTICIPATES_IN_URI)
+    var_set = {'publication_text': pub_text,
+               'property': property,
+               'claim': request.vars.claim}
+    print var_set
+    print "part type is {0}".format(part_type)
+    if part_type == 'individual':
+        ind_participant_form = LOAD('participant',
+                                    'individual_participant_form.load',
+                                    target='participant_head',
+                                    vars=var_set,
+                                    ajax=True,
+                                    content='loading participant editor')
+        return {'form': ind_participant_form}
+    else:  # assume term
+        print "about to load term_participant_form"
+        term_participant_form = LOAD('participant',
+                                     'term_participant_form.load',
+                                     target='participant_head',
+                                     vars=var_set,
+                                     ajax=True,
+                                     content='loading participant editor')
+        print "loaded {0}\n as term_participant_form".format(repr(term_participant_form)) 
+        return {'form': term_participant_form}
 
 
 def make_initial_participant_fields(claim):
@@ -336,9 +343,8 @@ def pelement():
                          #   record=ele,
                          #   fields=['type'],
                          #   showid=False)
-            foo = _build_head_buttons(claim_id)
-            add_buttons = _build_head_buttons(claim_id)
-            print("head buttons: %s".format(claim_id))
+            add_buttons = _build_head_buttons(-1*claim_id)
+            print("head buttons: {0}".format(claim_id))
     else:  # maybe make this never happend
         eform = SQLFORM(db.participant_element)
     
@@ -458,7 +464,7 @@ def add_child():
         elif type_label in TERM_TYPES:
             print "want to load finish_term"
             choose_vars = {'element_type': form.vars.type,
-                           'property': property,
+                           'property': form.vars.property,
                            'parent': parent}
             return LOAD("participant",
                         'choose_domain.load',
@@ -505,7 +511,8 @@ def choose_domain():
         parent = request.vars.parent
         finish_vars = {'domain': domain,
                        'element_type': element_type,
-                       'parent': parent}
+                       'parent': parent,
+                       'property': request.vars.property}
         return LOAD("participant",
                     'finish_term.load',
                     vars=finish_vars,
@@ -530,20 +537,36 @@ def finish_term():
                                                                '%(label)s'))))
     if form.process().accepted:
         term = form.vars.term
-        parent = request.vars.parent
+        parent = int(request.vars.parent)
         participant_type_id = request.vars.element_type
+        property_id = request.vars.property
         print "selected term {0}".format(str(term))
         print "passed element_type is {0}".format(request.vars.element_type)
         print "passed parent is {0}".format(parent)
         print "participant_code {0}".format(participant_type_id)
-        participant_id = lookup_participant(parent)
-        print "participant {0}".format(participant_id)
-        new_element = insert_participant_element(participant_id,
-                                                 participant_type_id)
-        print "new element {0}".format(new_element)
-        new_map = insert_element2term_map(new_element, term)
-        print "new map {0}".format(new_map)
-        redirect(request.env.http_web2py_component_location, client_side=True)
+        print "property {0}".format(property_id)
+        if parent > 0:
+            assert (parent > 0)
+            print(repr(parent))
+            participant_id = lookup_participant(parent)
+            print "participant {0}".format(participant_id)
+            new_element = insert_participant_element(participant_id,
+                                                     participant_type_id)
+            print "new element {0}".format(new_element)
+            new_map = insert_element2term_map(new_element, term)
+            print "new map {0}".format(new_map)
+            redirect(request.env.http_web2py_component_location, client_side=True)
+        else:
+            claim_id = -1*parent
+            new_participant = db.participant.insert()
+            new_p2claim_map = db.participant2claim.insert(claim=claim_id,
+                                                          participant=new_participant,
+                                                          property=property_id)
+            new_element = insert_participant_element(new_participant,participant_type_id)
+            new_map = insert_element2term_map(new_element, term)
+            np_row = db(db.participant.id==new_participant).select().first()
+            np_row.update_record(head_element=new_element)
+            redirect(request.env.http_web2py_component_location, client_side=True)
     return {'form': form}
 
 
@@ -552,6 +575,7 @@ def get_participant_code(type_str):
 
 
 def lookup_participant(parent):
+    print "parent={0}".format(repr(parent))
     parent_element = db.participant_element(parent)
     return parent_element.participant
 
