@@ -19,12 +19,13 @@ def participant_form():
     print "request.vars = {0}".format(repr(request.vars))
     if request.vars.participant is None:
         form = gen_new_participant_form()
-    else: 
-        form = SQLFORM(db.participant, request.vars.participant) 
+    else:
+        form = SQLFORM(db.participant, request.vars.participant)
     if form.process().accepted:
         if request.vars.participant is None:
             process_new_participant_form(form)
     return form
+
 
 def gen_new_participant_form():
     """initial form for creating a participant - used by new claim editor"""
@@ -63,14 +64,14 @@ def process_new_participant_form(form):
         return {'form': ind_participant_form}
     else:  # assume term
         print "about to load term_participant_form"
-        term_participant_form = LOAD('participant',
-                                     'term_participant_form.load',
-                                     target='participant_head',
-                                     vars=var_set,
-                                     ajax=True,
-                                     content='loading participant editor')
-        print "loaded {0}\n as term_participant_form".format(repr(term_participant_form)) 
-        return {'form': term_participant_form}
+        tpf = LOAD('participant',
+                   'term_participant_form.load',
+                   target='participant_head',
+                   vars=var_set,
+                   ajax=True,
+                   content='loading participant editor')
+        print("loaded {0}\n as term_participant_form".format(repr(tpf)))
+        return {'form': tpf}
 
 
 def make_initial_participant_fields(claim):
@@ -118,7 +119,7 @@ def make_labeled_button(val, group):
 
 def element_initial():
     print("hit element_initial")
-    form=FORM(INPUT(_type='text',_name='element'),
+    form=FORM(INPUT(_type='text', _name='element'),
               BR(),
               INPUT(_type='submit'))
     if form.process().accepted:
@@ -136,7 +137,7 @@ def term_participant_form():
     if form.process().accepted:
         claim_id = request.vars.claim
         property_id = request.vars.property
-        pub_text = request.vars.publication_text        
+        pub_text = request.vars.publication_text
         domain = form.vars.domain
         assert pub_text is not None, 'pub text is None'
         assert claim_id is not None, 'claim_id is None'
@@ -197,7 +198,7 @@ def term_from_domain():
 
 def individual_participant_form():
     claim_id = request.vars.claim
-    sel = build_individual_list(claim)
+    sel = build_individual_list(claim_id)
     form = FORM('Choose an individual',
                 BR(),
                 sel,
@@ -210,11 +211,10 @@ def individual_participant_form():
         new_part = db.participant.insert(publication_text=pub_text)
         individual_code = get_participant_code('individual')
         element_id = insert_participant_element(new_part, individual_code)
-        insert_element2term_map(element_id, ind_id)
+        insert_element2ind_map(element_id, ind_id)
         db.participant2claim.insert(claim=claim_id,
                                     participant=new_part,
                                     property=property_id)
-        
         print "form vars: %s" % repr(form.vars.ind_choice)
     return {'form': form}
 
@@ -222,11 +222,11 @@ def individual_participant_form():
 def build_individual_list(claim_id):
     narrative = db.claim(claim_id).narrative
     i2n_map = db(db.individual2narrative.narrative == narrative).select()
-    individual_ids = [map.individual for map in i2n_map]
-    individual_labels = [db.individual(ind_id).label for ind_id in individual_ids]
+    i_ids = [map.individual for map in i2n_map]
+    i_labels = [db.individual(i_id).label for i_id in i_ids]
     result = []
-    for pair in zip(individual_ids,individual_labels):
-        result.append(OPTION(pair[1],_value=pair[0]))
+    for pair in zip(i_ids, i_labels):
+        result.append(OPTION(pair[1],  _value=pair[0]))
     return SELECT(name='choose an individual', _name='ind_choice', *result)
 
 
@@ -248,7 +248,7 @@ def enter():
         print "type_label is {}".format(type_label)
         print "property is {}".format(property_label)
         if type_label == 'individual':
-            print "want to load finish_individual"
+            print "want to load finish_individual (1)"
             return LOAD("participant",
                         'finish_individual.load',
                         target='add_element',
@@ -268,6 +268,7 @@ def enter():
         else:
             print "Fell through"
     return {'form': form}
+
 
 def get_element_args(req):
     """ """
@@ -330,24 +331,24 @@ def pelement():
                 ee = etx['term']
                 etl = db.term[ee].label
             else:
-                etx = None # lookup_pelement_individual_map(ele)
+                etx = None #  lookup_pelement_individual_map(ele)
                 if etx:
                     ee = etx['individual']
                     etl = db.individual[ee].label
                 else:
                     ee = None
                     etl = None
-            part_row = "" # render_participant(db.participant[eler.participant])
+            part_row = "" #  render_participant(db.participant[eler.participant])
             print "etr is %s " % repr(ee)
-            eform = None # SQLFORM(db.participant_element,
-                         #   record=ele,
-                         #   fields=['type'],
-                         #   showid=False)
+            eform = None 
+            #  SQLFORM(db.participant_element,
+            #   record=ele,
+            #   fields=['type'],
+            #   showid=False)
             add_buttons = _build_head_buttons(-1*claim_id)
             print("head buttons: {0}".format(claim_id))
     else:  # maybe make this never happend
         eform = SQLFORM(db.participant_element)
-    
     result = dict(etype=etype,
                   ele=ele,
                   epart=part_row,
@@ -373,10 +374,11 @@ def _build_element_buttons(element):
               _class='btn',
               _style='margin-top: 1em;')}
 
+
 def _build_head_buttons(claim):
     return {"child_button":
             A(T("Add Child"),
-              callback=URL('add_child/' + str(claim)),
+              callback=URL('add_head/' + str(claim)),
               target="active_element",
               _class='btn',
               _style='margin-top: 1em;')}
@@ -455,14 +457,64 @@ def add_child():
         print "type_label is {}".format(type_label)
         print "property is {}".format(property_label)
         if type_label == 'individual':
-            print "want to load finish_individual"
+            print "want to load finish_individual (2)"
+            choose_vars = {'element_type': form.vars.type,
+                           'property': form.vars.property,
+                           'parent': parent}
             return LOAD("participant",
-                        'finish_individual.load',
+                        'finish_individual_tail.load',
+                        vars=choose_vars,
                         target='add_element',
                         ajax=True,
                         content='loading individual editor....')
         elif type_label in TERM_TYPES:
             print "want to load finish_term"
+            choose_vars = {'element_type': form.vars.type,
+                           'property': form.vars.property,
+                           'parent': parent}
+            return LOAD("participant",
+                        'choose_domain.load',
+                        vars=choose_vars,
+                        target='add_element',
+                        ajax=True,
+                        content='loading term editor....')
+        else:
+            print "Fell through"
+    return {'form': form}
+
+
+def add_head():
+    parent = get_element_args(request)
+    print "parent = {0}".format(parent)
+    participant_field = Field('type',
+                              'reference participant_type',
+                              requires=IS_EMPTY_OR(IS_IN_DB(db,
+                                                            'participant_type.id',
+                                                            '%(label)s')))
+    property_field = Field('property',
+                           'reference property',
+                           requires=IS_EMPTY_OR(IS_IN_DB(db,
+                                                         'property.id',
+                                                         '%(label)s')))
+    form = SQLFORM.factory(participant_field, property_field)
+    if form.process().accepted:  # validators?
+        type_label = db.participant_type(form.vars.type).label
+        property_label = db.property(form.vars.property).label
+        print "type_label is {}".format(type_label)
+        print "property is {}".format(property_label)
+        if type_label == 'individual':
+            print "want to load finish_individual"
+            choose_vars = {'element_type': form.vars.type,
+                           'property': form.vars.property,
+                           'parent': parent}
+            return LOAD("participant",
+                        'finish_individual_head.load',
+                        vars=choose_vars,
+                        target='add_element',
+                        ajax=True,
+                        content='loading individual editor....')
+        elif type_label in TERM_TYPES:
+            print "want to choose domain for head term"
             choose_vars = {'element_type': form.vars.type,
                            'property': form.vars.property,
                            'parent': parent}
@@ -487,24 +539,58 @@ def add_sibling():
     return None
 
 
-def finish_individual():
-    form = SQLFORM(db.pelement2individual)
+def finish_individual_head():
+    claim_id = -1*int(request.vars.parent)
+    form = build_individual_form(claim_id)
+    if form.process().accepted:
+        property_id = request.vars.property
+        pub_text = request.vars.publication_text
+        ind_id = form.vars.ind_choice
+        new_part = db.participant.insert(publication_text=pub_text)
+        individual_code = get_participant_code('individual')
+        element_id = insert_participant_element(new_part, individual_code)
+        insert_element2ind_map(element_id, ind_id)
+        db.participant2claim.insert(claim=claim_id,
+                                    participant=new_part,
+                                    property=property_id)
+        print "form vars: %s" % repr(form.vars.ind_choice)
+        np_row = db(db.participant.id==new_part).select().first()
+        np_row.update_record(head_element=element_id)
+        redirect(request.env.http_web2py_component_location, client_side=True)
+    return {'form': form}
+
+def build_individual_form(claim_id):
+    sel = build_individual_list(claim_id)
+    return FORM('Choose an individual',
+                BR(),
+                sel,
+                BR(),
+                INPUT(_type='submit'))
+
+
+def finish_individual_tail():
+    parent = request.vars.parent # pelement id
+    part_id = db.participant_element(parent).participant
+    part2claim_map = db(db.participant2claim.participant == part_id).select().first()
+    claim_id = part2claim_map.claim
+    form = build_individual_form(claim_id)
+    if form.process().accepted:
+        property_id = request.vars.property
+        ind_id = form.vars.ind_choice
+        print("Checkpoint 1")
+        individual_code = get_participant_code('individual')
+        print("Checkpoint 2")
+        element_id = insert_participant_element(part_id, individual_code)
+        print("element_id = %s" % element_id)
+        insert_element2ind_map(element_id, ind_id)
+        insert_participant_link(parent, element_id, get_partof_property())
+        print "form vars: %s" % repr(form.vars.ind_choice)
+        redirect(request.env.http_web2py_component_location, client_side=True)
     return {'form': form}
 
 
 def choose_domain():
-    form = FORM('Choose a domain',
-                FIELDSET('taxonomy',
-                         INPUT(_type='radio',
-                               _name='domain',
-                               _value='taxonomy')),
-                BR(),
-                FIELDSET('anatomy',
-                         INPUT(_type='radio',
-                               _name='domain',
-                               _value='anatomy')),
-                BR(),
-                INPUT(_type='submit'))
+    form = domain_choice_form()
     if form.process().accepted:  # validators?
         element_type = request.vars.element_type
         domain = form.vars.domain
@@ -520,6 +606,21 @@ def choose_domain():
                     ajax=True,
                     content='loading term editor....')
     return {'form': form}
+
+
+def domain_choice_form():
+    return FORM('Choose a domain',
+                FIELDSET('taxonomy',
+                         INPUT(_type='radio',
+                               _name='domain',
+                               _value='taxonomy')),
+                BR(),
+                FIELDSET('anatomy',
+                         INPUT(_type='radio',
+                               _name='domain',
+                               _value='anatomy')),
+                BR(),
+                INPUT(_type='submit'))
 
 
 def finish_term():
@@ -538,7 +639,6 @@ def finish_term():
     if form.process().accepted:
         term = form.vars.term
         parent = int(request.vars.parent)
-        participant_type_id = request.vars.element_type
         property_id = request.vars.property
         print "selected term {0}".format(str(term))
         print "passed element_type is {0}".format(request.vars.element_type)
@@ -546,28 +646,40 @@ def finish_term():
         print "participant_code {0}".format(participant_type_id)
         print "property {0}".format(property_id)
         if parent > 0:
-            assert (parent > 0)
-            print(repr(parent))
-            participant_id = lookup_participant(parent)
-            print "participant {0}".format(participant_id)
-            new_element = insert_participant_element(participant_id,
-                                                     participant_type_id)
-            print "new element {0}".format(new_element)
-            new_map = insert_element2term_map(new_element, term)
-            print "new map {0}".format(new_map)
-            redirect(request.env.http_web2py_component_location, client_side=True)
+            finish_tail_term(term,
+                             request.vars.element_type,
+                             parent,
+                             property_id)
         else:
-            claim_id = -1*parent
-            new_participant = db.participant.insert()
-            new_p2claim_map = db.participant2claim.insert(claim=claim_id,
-                                                          participant=new_participant,
-                                                          property=property_id)
-            new_element = insert_participant_element(new_participant,participant_type_id)
-            new_map = insert_element2term_map(new_element, term)
-            np_row = db(db.participant.id==new_participant).select().first()
-            np_row.update_record(head_element=new_element)
-            redirect(request.env.http_web2py_component_location, client_side=True)
+            finish_head_term(term,
+                             request.vars.element_type,
+                             parent,
+                             property_id)
     return {'form': form}
+
+
+def finish_tail_term(term, element_type, parent, property_id):
+    participant_id = lookup_participant(parent)
+    print "participant {0}".format(participant_id)
+    new_element = insert_participant_element(participant_id,
+                                             element_type)
+    print "new element {0}".format(new_element)
+    new_map = insert_element2term_map(new_element, term)
+    print "new map {0}".format(new_map)
+    redirect(request.env.http_web2py_component_location, client_side=True)
+
+
+def finish_head_term(term, element_type, parent, property_id):
+    claim_id = -1*parent
+    new_participant = db.participant.insert()
+    new_p2claim_map = db.participant2claim.insert(claim=claim_id,
+                                                  participant=new_participant,
+                                                  property=property_id)
+    new_element = insert_participant_element(new_participant, element_type)
+    new_map = insert_element2term_map(new_element, term)
+    np_row = db(db.participant.id == new_participant).select().first()
+    np_row.update_record(head_element=new_element)
+    redirect(request.env.http_web2py_component_location, client_side=True)
 
 
 def get_participant_code(type_str):
@@ -585,12 +697,12 @@ def insert_participant_element(participant_id, type_id):
                                          type=type_id)
 
 
-def lookup_claim(participant_id):
-    return db.participant(participant_id).claim
-
-
 def insert_element2term_map(ele_id, term_id):
     return db.pelement2term.insert(element=ele_id, term=term_id)
+
+
+def insert_element2ind_map(ele_id, i_id):
+    return db.pelement2individual.insert(element=ele_id, individual=i_id)
 
 
 def finish_child():
@@ -636,36 +748,29 @@ def get_entity(ele):
         else:
             return (None, None)
 
-# new stuff getting called from the head edit pane in claim.py
-
-def start_individual_head():
-    return None
-
-def start_term_head():
-    return None
-
-
-
 
 def get_term_map_for_ele(ele):
     """get the pelement2term mapping for this element"""
-    # TODO: should be unique
-    return db(db.pelement2term.element == ele).select().first()
+    rows = db(db.pelement2term.element == ele).select()
+    assert(len(rows) == 1)
+    return rows[0]
 
 
 def get_individual_map_for_ele(ele):
     """get the pelement2individual mapping for this element"""
-    # TODO: should be unique
-    return db(db.pelement2individual.element == ele).select().first()
+    rows =  db(db.pelement2individual.element == ele).select()
+    assert(len(rows) == 1)
+    return rows[0]
 
 
 PART_OF_URI = 'http://purl.obolibrary.org/obo/BFO_0000050'
 
+
 def get_partof_property():
     return db(db.property.source_id == PART_OF_URI).select().first()
+
 
 def insert_participant_link(parent_id, child_id, property_id):
     db.participant_link.insert(child=child_id,
                                parent=parent_id,
                                property=property_id)
-

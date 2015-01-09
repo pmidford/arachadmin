@@ -148,6 +148,7 @@ def head_form():
 
 
 def update_participant_head_form(claim, participant_form):
+    # dead code?
     if claim:
         flash = None
         print participant_form.vars
@@ -162,9 +163,9 @@ def update_participant_head_form(claim, participant_form):
             head_vars = {'publication_string': pub_str,
                          'claim': claim}
             if part_type == 'individual':
-                new_form = start_individual_head_form(pub_str, claim)
+                new_form = None # start_individual_head_form(pub_str, claim)
             else:
-                new_form = start_term_head_form(pub_str, claim)
+                new_form = None # start_term_head_form(pub_str, claim)
     else:
         flash = 'error: no claim to link participant to'
     return (new_form, flash)
@@ -542,6 +543,7 @@ def build_edges(elements, p_id, p_property):
     eque = deque()
     eque.append(head_element)
     done = set()
+    print "head element is {0}".format(head_element)
     results = [(0,
                 elements.index(head_element),
                 property_color_lookup(p_property))]
