@@ -30,8 +30,6 @@ response.menu = [
         ('Authors', False, URL('author', 'list', [])),
         ('Narratives', False, URL('narrative', 'list', [])),
         ('Claims', False, URL('claim', 'list', [])),
-        ('Behavior Terms', False, URL('behavior_term', 'list', [])),
-        ('Anatomy Terms', False, URL('anatomy_term', 'list'), []),
         ('Taxa (non-NCBI)', False, URL('taxon', 'list'), [])
     ]),
     (T('Tools'), False, URL('default', 'index'), [
