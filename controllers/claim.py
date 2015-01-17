@@ -90,15 +90,7 @@ def enter():
                             vars=var_set,
                             ajax=True,
                             content='loading participant editor')
-    if None:  # participant_arg:
-        element_load = LOAD('participant',
-                            'pelement.load',
-                            target='active_element',
-                            vars=var_set,
-                            ajax=True,
-                            content='loading element editor')
-    else:
-        element_load = None
+    element_load = None
     return {'claim_form': claim_form_load,
             'participant_form': participant_load,
             'element_form': element_load,

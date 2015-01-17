@@ -5,26 +5,33 @@
    <DIV class="span6">
        <h3>Claim/Observation form</h3>
        {{=claim_form}}
-       {{=A(T("Enter New Claim/Observation"), _href=URL('arachadmin','claim','enter'), _class='btn',
+       {{=A(T("Enter New Claim/Observation"), 
+            _href=URL('arachadmin','claim','enter'), 
+            _class='btn',
             _style='margin-top: 1em;')}}
        <br/>
-       <h3>Table of associated participants</h3>
-      {{headers=['claim','participant','predicate']}}
-      {{=TABLE(
-         THEAD(TR(*[TH(header) for header in headers])),
-         TBODY(*[TR(TD(row['claim']),
-                    TD(A(row['participant'],_href=row['participant_link'])),
-                    TD(row['property']))
-         for row in link_table]))}}
+       {{if link_table:}}
+          {{=H3("Table of associated participants")}}
+          {{headers=['claim','participant','predicate']}}
+          {{=TABLE(
+             THEAD(TR(*[TH(header) for header in headers])),
+             TBODY(*[TR(TD(row['claim']),
+                        TD(A(row['participant'],_href=row['participant_link'])),
+                        TD(row['property']))
+             for row in link_table]))}}
+          {{pass}} 
    </DIV>
    <DIV class="span6">
-       <h3>Participant form</h3>
        <DIV id="participant_head">
-	 {{=participant_form}}
+	 {{if participant_form:}}
+	     {{=participant_form}}
+         {{pass}}
        </DIV>
        <DIV class="pelement">
           <p id="active_element">
-	    {{=element_form}}
+	    {{if element_form:}}
+	        {{=element_form}}
+            {{pass}}
           </p>
        </DIV>
    </DIV>

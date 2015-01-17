@@ -16,15 +16,46 @@ def list():
 
 
 def participant_form():
-    print "request.vars = {0}".format(repr(request.vars))
     if request.vars.participant is None:
-        form = gen_new_participant_form()
+        form = B('No participant selected')  # maybe a button here?
     else:
-        form = SQLFORM(db.participant, request.vars.participant)
-    if form.process().accepted:
+        form = make_participant_fields(request.vars.participant)
+    if hasattr(form,'process') and form.process().accepted: # less pythonic
         if request.vars.participant is None:
             process_new_participant_form(form)
-    return form
+    return {'form': form}
+
+def make_participant_fields(participant_id):
+    fields=['label', 
+            'publication_taxon',
+            'publication_anatomy',
+            'publication_substrate',
+            'publication_text',
+            'participation_property',
+            'generated_id']
+    if participant_id:
+        return SQLFORM(db.participant, record=participant_id, fields=fields)
+    else:
+        return SQLFORM(db.participant, fields=fields)
+
+def make_initial_term_individual_fields():
+    return [DIV(FIELDSET('publication string',
+                         INPUT(_name='publication_string')),
+                BR()),
+            DIV('Choose term or individual participant',
+                BR(),
+                make_labeled_button('term', 'participant_type'),
+                BR(),
+                make_labeled_button('individual', 'participant_type'),
+                BR()),
+            DIV('Choose participant level',
+                BR(),
+                make_labeled_button('active participant', 'property'),
+                BR(),
+                make_labeled_button('participant', 'property'))]
+
+
+
 
 
 def gen_new_participant_form():
@@ -81,21 +112,6 @@ def make_initial_participant_fields(claim):
     else:
         return make_initial_term_only_fields()
 
-def make_initial_term_individual_fields():
-    return [DIV(FIELDSET('publication string',
-                         INPUT(_name='publication_string')),
-                BR()),
-            DIV('Choose term or individual participant',
-                BR(),
-                make_labeled_button('term', 'participant_type'),
-                BR(),
-                make_labeled_button('individual', 'participant_type'),
-                BR()),
-            DIV('Choose participant level',
-                BR(),
-                make_labeled_button('active participant', 'property'),
-                BR(),
-                make_labeled_button('participant', 'property'))]
 
 def make_initial_term_only_fields():
     return [DIV(FIELDSET('publication string',
