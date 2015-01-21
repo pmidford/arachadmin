@@ -90,10 +90,8 @@ def enter():
                             vars=var_set,
                             ajax=True,
                             content='loading participant editor')
-    element_load = None
     return {'claim_form': claim_form_load,
             'participant_form': participant_load,
-            'element_form': element_load,
             "link_table": link_table,
             "element_list": element_list,
             "edge_list": edge_list}
@@ -139,33 +137,9 @@ def head_form():
         return {'form': form}
 
 
-def update_participant_head_form(claim, participant_form):
-    # dead code?
-    if claim:
-        flash = None
-        print participant_form.vars
-        if participant_form.vars.domain:
-            domain_str = participant_form.vars.domain
-            pub_str = participant_form.vars.publication_string
-            part_type = participant_form.vars.participant_type
-            new_form = head_domain_form(pub_str, part_type, domain_str)
-        else:
-            pub_str = participant_form.vars.publication_string
-            part_type = participant_form.vars.participant_type
-            head_vars = {'publication_string': pub_str,
-                         'claim': claim}
-            if part_type == 'individual':
-                new_form = None # start_individual_head_form(pub_str, claim)
-            else:
-                new_form = None # start_term_head_form(pub_str, claim)
-    else:
-        flash = 'error: no claim to link participant to'
-    return (new_form, flash)
-
-
-def make_participant_form(id=None):
-    if id:
-        partic = db.participant[id]
+def make_participant_form(part_id=None):
+    if part_id:
+        partic = db.participant[part_id]
         pubstr = partic.publication_taxon
     else:
         pubstr = ''
@@ -186,42 +160,7 @@ def start_individual_head_form(pub_str, claim):
     return form
 
 
-def start_term_head_form(pub_str, claim):
-    fields = make_initial_participant_fields(pub_str)
-    domain_fields = [BR(),
-                     FIELDSET('taxonomy',
-                              INPUT(_type='radio',
-                                    _name='domain',
-                                    _value='taxonomy')),
-                     BR(),
-                     FIELDSET('anatomy',
-                              INPUT(_type='radio',
-                                    _name='domain',
-                                    _value='anatomy'))]
-    fields.extend(domain_fields)
-    submit_fields = [BR(),
-                     INPUT(_type='submit')]
-    fields.extend(submit_fields)
-    form = FORM(*fields)
-    return form
-
-
-def head_domain_form(pub_str, claim, domain_str):
-    fields = make_initial_participant_fields(pub_str)
-    domain = [BR(),
-              'Domain',
-              domain_str]
-    fields.extend(domain)
-    field_domain = taxon_domain
-    form = SQLFORM.factory(Field('term',
-                                 'reference term',
-                                 requires=IS_EMPTY_OR(IS_IN_DB(field_domain,
-                                                               'term.id',
-                                                               '%(label)s'))))
-    return form
-
-
-def make_initial_participant_fields(pubstr, p_type=None):
+def make_initial_participant_fields(pubstr):
     return [FIELDSET('publication string',
                      INPUT(_name='publication_string', _value=pubstr)),
             BR(),
@@ -256,10 +195,11 @@ def get_primary_participant(claim):
         participates = properties['participates_in']
         rows = db((db.participant2claim.claim == claim.id) &
                   (db.participant2claim.property == participates)).select()
-        if len(rows)>0:
+        if len(rows) > 0:
             return rows[0].participant
         else:
             return None
+
 
 def make_link_table(claim):
     """generates a set of records that each will correspond to a row of
@@ -358,6 +298,7 @@ def update_tool():
                         print "substrate participant exists, no updated"
                 elements = get_elements(p_id)
                 result.append((p_id, len(elements)))
+    update_participants()
     return {'update_report': result}
 
 
@@ -372,6 +313,48 @@ def check_existing_substrate(claim_id):
     print p_list
     return len(p_list) == 2
 
+
+def update_participants():
+    '''this fixes a problem where the structure of individual participants is not 
+    captured in element chains when used secondarily in subsequent participants'''
+    ptc_table = {}
+    for ptc in all_participants():
+        print("participant: {0}".format(ptc.id))
+        chain = []
+        head = ptc.head_element
+        cur_ele = head
+        print("current element: {0}".format(cur_ele))
+        plink_rows = db(db.participant_link.parent == cur_ele).select()
+        while (plink_rows):
+            if len(plink_rows) > 1:
+                raise RuntimeError("Bad plink")
+            chain = extend_pelement_chain(cur_ele, chain)
+            plink = plink_rows[0]
+            cur_ele = plink.child
+            print("current element: {0}".format(cur_ele))
+            plink_rows = db(db.participant_link.parent == cur_ele).select()
+        chain = extend_pelement_chain(cur_ele, chain)
+        print "done"
+
+
+def extend_pelement_chain(cur_ele, chain):
+    eleTerm = db(db.pelement2term.element == cur_ele).select()
+    eleIndiv = db(db.pelement2individual.element == cur_ele).select()
+    if eleTerm:
+        chain_link = ("Term", eleTerm[0].term)
+        chain.append(chain_link)
+        print repr(chain_link)
+    elif eleIndiv:
+        chain_link = ("Individual", eleIndiv[0].individual)
+        chain.append(chain_link)
+        print repr(chain_link)
+    else:
+        print "bad element"
+    return chain
+
+
+def all_participants():
+    return db(db.participant.id >0).select()
 
 def substrate_element(sub_term, claim_id):
     # sub_expr is term id of substrate
@@ -482,13 +465,10 @@ def build_element_graph(claim):
     behavior_entry = (reduce_label(behavior.label), -1*claim.id)
     p2c_map = db(db.participant2claim.claim == claim).select()
     participants = [row.participant for row in p2c_map]
-    print "participants = {}".format(str(participants))
     elements = []
-    for p in participants:
-        elist = db(db.participant_element.participant == p).select()
-        print "elist: %s" % str(elist)
+    for p_id in participants:
+        elist = db(db.participant_element.participant == p_id).select()
         elements.extend(elist)
-    print "elements: %s" % elements
     element_list = []
     edge_list = []
     element_ids = [element.id for element in elements]
@@ -496,11 +476,11 @@ def build_element_graph(claim):
     element_ids.insert(0, behavior_id)
     element_labels.insert(0, behavior_entry)
     element_list.extend(element_labels)
-    for p in participants:
-        p_property = db((db.participant2claim.participant == p) &
+    for p_id in participants:
+        p_property = db((db.participant2claim.participant == p_id) &
                         (db.participant2claim.claim ==
                          claim.id)).select().first().property
-        edge_list.extend(build_edges(element_ids, p, p_property))
+        edge_list.extend(build_edges(element_ids, p_id, p_property))
     print "elements = {0}".format(str(element_list))
     print "links = {0}".format(str(edge_list))
     return (element_list, edge_list)
@@ -508,6 +488,7 @@ def build_element_graph(claim):
 
 def process_p_element(element_id):
     """
+    generates a label for the term or individual correponding to an element
     """
     p2t = db(db.pelement2term.element == element_id).select().first()
     if p2t:
@@ -529,8 +510,9 @@ def reduce_label(label):
 
 
 def build_edges(elements, p_id, p_property):
+    """builds the graph of elements (terms/individual) in a
+    participant and edges that indicate the linking properties"""
     from collections import deque
-    print "entering build_edges"
     head_element = db.participant[p_id].head_element
     eque = deque()
     eque.append(head_element)
