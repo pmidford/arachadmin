@@ -236,59 +236,11 @@ def update_tool():
         rows = db(db.participant2claim.claim == claim.id).select()
         if len(rows) > 0:
             participants = [row.participant for row in rows]
-            for participant in participants:
-                p_id = participant.id
+            for p_id in participants:
+                participant = p_id
                 elements = get_elements(p_id)
                 if len(elements) == 0:
-                    tax_id = None
-                    ana_id = None
-                    if participant.taxon:
-                        if (participant.quantification == 'some'):
-                            tax_id = insert_participant_element(p_id,
-                                                                some_code)
-                            insert_element2term_map(tax_id, participant.taxon)
-                        elif (participant.quantification == 'individual'):
-                            ind = lookup_individual(participant.label,
-                                                    participant.taxon,
-                                                    claim.narrative)
-                            if ind is None:
-                                ind = insert_individual(participant.label,
-                                                        participant.taxon,
-                                                        claim.narrative)
-                            tax_id = insert_participant_element(p_id,
-                                                                indiv_code)
-                            insert_element2indiv_map(tax_id, ind)
-                        else:
-                            print "participant %d has no taxon" % p_id
-                    if participant.anatomy:
-                        if (participant.quantification == "some"):
-                            ana_id = insert_participant_element(p_id,
-                                                                some_code)
-                            insert_element2term_map(ana_id,
-                                                    participant.anatomy)
-                            insert_participant_link(ana_id,
-                                                    tax_id,
-                                                    properties['part_of'])
-                            participant.update_record(head_element=ana_id)
-                        elif (participant.quantification == 'individual'):
-                            ana_label = get_term_label(participant.anatomy)
-                            ind_label = ana_label + " of " + participant.label
-                            ind = lookup_individual(ind_label,
-                                                    participant.anatomy,
-                                                    claim.narrative)
-                            if ind is None:
-                                ind = insert_individual(ind_label,
-                                                        participant.anatomy,
-                                                        claim.narrative)
-                            ana_id = insert_participant_element(p_id,
-                                                                indiv_code)
-                            insert_element2indiv_map(ana_id, ind)
-                            insert_participant_link(ana_id,
-                                                    tax_id,
-                                                    properties['part_of'])
-                            participant.update_record(head_element=ana_id)
-                        else:
-                            print "participant %d has no anatomy" % p_id
+                    old_claim_update(elements,participant, p_id)
                 if participant.substrate:
                     print "found substrate"
                     if not(check_existing_substrate(claim.id)):
@@ -301,6 +253,62 @@ def update_tool():
     update_participants()
     return {'update_report': result}
 
+
+def old_claim_update(elements, participant, p_id):
+    """This should be dead code at this point"""
+    tax_id = None
+    ana_id = None
+    if (1 > 0):
+        raise RuntimeException("This code should be dead - old_claim_update")
+    print "Test2: %s %s" % (repr(participant), repr(p_id))
+    if participant.taxon:
+        if (participant.quantification == 'some'):
+            tax_id = insert_participant_element(p_id,
+                                                some_code)
+            insert_element2term_map(tax_id, participant.taxon)
+        elif (participant.quantification == 'individual'):
+            ind = lookup_individual(participant.label,
+                                    participant.taxon,
+                                    claim.narrative)
+            if ind is None:
+                ind = insert_individual(participant.label,
+                                        participant.taxon,
+                                        claim.narrative)
+                tax_id = insert_participant_element(p_id,
+                                                    indiv_code)
+                insert_element2indiv_map(tax_id, ind)
+            else:
+                print "participant %d has no taxon" % p_id
+                if participant.anatomy:
+                    if (participant.quantification == "some"):
+                        ana_id = insert_participant_element(p_id,
+                                                            some_code)
+                        insert_element2term_map(ana_id,
+                                                participant.anatomy)
+                        insert_participant_link(ana_id,
+                                                tax_id,
+                                                properties['part_of'])
+                        participant.update_record(head_element=ana_id)
+                    elif (participant.quantification == 'individual'):
+                        ana_label = get_term_label(participant.anatomy)
+                        ind_label = ana_label + " of " + participant.label
+                        ind = lookup_individual(ind_label,
+                                                participant.anatomy,
+                                                claim.narrative)
+                        if ind is None:
+                            ind = insert_individual(ind_label,
+                                                    participant.anatomy,
+                                                    claim.narrative)
+                        ana_id = insert_participant_element(p_id,
+                                                            indiv_code)
+                        insert_element2indiv_map(ana_id, ind)
+                        insert_participant_link(ana_id,
+                                                tax_id,
+                                                properties['part_of'])
+                        participant.update_record(head_element=ana_id)
+                    else:
+                        print "participant %d has no anatomy" % p_id
+    return
 
 def get_elements(p_id):
     '''returns row set of participant elements for this participant'''
@@ -315,8 +323,13 @@ def check_existing_substrate(claim_id):
 
 
 def update_participants():
-    '''this fixes a problem where the structure of individual participants is not 
+    '''this will eventually fix a problem where the structure of individual 
+    participants is not 
     captured in element chains when used secondarily in subsequent participants'''
+    ptc_table = build_participant_chains()
+
+
+def build_participant_chains():
     ptc_table = {}
     for ptc in all_participants():
         print("participant: {0}".format(ptc.id))
@@ -334,8 +347,9 @@ def update_participants():
             print("current element: {0}".format(cur_ele))
             plink_rows = db(db.participant_link.parent == cur_ele).select()
         chain = extend_pelement_chain(cur_ele, chain)
-        print "done"
-
+        ptc_table[ptc] = chain
+        print("chain {0}".format(repr(chain)))
+    return ptc_table
 
 def extend_pelement_chain(cur_ele, chain):
     eleTerm = db(db.pelement2term.element == cur_ele).select()
@@ -343,11 +357,9 @@ def extend_pelement_chain(cur_ele, chain):
     if eleTerm:
         chain_link = ("Term", eleTerm[0].term)
         chain.append(chain_link)
-        print repr(chain_link)
     elif eleIndiv:
         chain_link = ("Individual", eleIndiv[0].individual)
         chain.append(chain_link)
-        print repr(chain_link)
     else:
         print "bad element"
     return chain
