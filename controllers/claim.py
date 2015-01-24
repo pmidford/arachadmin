@@ -18,6 +18,8 @@ def index():
 
 def list():
     """
+    generates a page listing claims - ids (should change this) are
+    links to the edit page for the claim
     """
     from claim_tools import make_claim_url, make_participant_url
     claims = db().select(db.claim.ALL, orderby=db.claim.id)
@@ -240,14 +242,14 @@ def update_tool():
                 participant = p_id
                 elements = get_elements(p_id)
                 if len(elements) == 0:
-                    old_claim_update(elements,participant, p_id)
+                    old_claim_update(elements, participant, p_id)
                 if participant.substrate:
                     print "found substrate"
                     if not(check_existing_substrate(claim.id)):
                         # assume for now that substrates are SOME expressions
                         substrate_element(participant.substrate, claim.id)
                     else:
-                        print "substrate participant exists, no updated"
+                        print "substrate participant exists, not updated"
                 elements = get_elements(p_id)
                 result.append((p_id, len(elements)))
     update_participants()
