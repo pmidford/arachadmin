@@ -329,16 +329,90 @@ def update_participants():
     participants is not 
     captured in element chains when used secondarily in subsequent participants'''
     ptc_table = build_participant_chains()
+    ptc_keys = ptc_table.keys()  # grab once, so order of traveral is consistent
+    for ptc in ptc_keys:
+        print("participant: {0}".format(ptc.id))
+        chain = ptc_table[ptc]
+        for ele_spec1 in chain:
+            if ele_spec1[0] == 'Individual':
+                ele_score = len(chain) - chain.index(ele_spec1)
+                best = best_element_match(ptc, ptc_table, ptc_keys, ele_spec1)
+                if best[0] > ele_score:
+                    print("Element needs updating; score = {0}, chain = {1}".format(ele_score, chain))
+                    msg_str = "Best Match len = {0}\n\t ele2 = {1}\n\t chain = {2}"
+                    print(msg_str.format(best[0],
+                                         best[1],
+                                         best[2]))
+                    print get_plink_n(ptc, chain.index(ele_spec1))
+                    fix_element_chain(ptc, ele_spec1, chain, best)
+
+
+def fix_element_chain(ptc, element_spec, chain, best):
+    ''' actually extends the element chain '''
+    indiv_code = get_participant_code('individual')
+    properties = get_properties()
+    best_score, ptc2_id, best_chain = best
+    chain_index = len(best_chain) - best_score + 1
+    new_template = best_chain[chain_index:]
+    start = get_plink_n(ptc,chain.index(element_spec))
+    if start is None: # start is head element
+        print("chain_index = {0}, new_template = {1}".format(chain_index, new_template))
+        clink = new_template[0]
+        clink_type = clink[0]
+        assert clink_type == 'Individual'
+        ind_id = clink[1]
+        ele_id = insert_participant_element(ptc.id,indiv_code)
+        insert_element2indiv_map(ele_id, ind_id)
+        insert_participant_link(ptc.head_element,ele_id,properties['part_of'])
+        head_ele = db.participant_link(ptc.head_element)
+    else:   # start is in a chain already
+        pass
+    return None
+
+
+
+
+
+def best_element_match(ptc, ptc_table, ptc_keys, ele_spec1):
+    best_part = None
+    longest_match = 0
+    for ptc2 in ptc_keys:
+        chain2 = ptc_table[ptc2]
+        if ele_spec1 in chain2:
+            len2 = len(chain2) - chain2.index(ele_spec1)
+            if len2 > longest_match:
+                longest_match = len2
+                best_part = (longest_match, ptc2.id, chain2)
+    if best_part:
+        return best_part
+    else:
+        return None
+
+def get_plink_n(ptc, n):
+    print "n = {0}".format(n)
+    cur_ele = ptc.head_element
+    count = 0
+    print cur_ele
+    plink_rows = db(db.participant_link.parent == cur_ele).select()
+    if plink_rows:
+        plink = plink_rows[0]
+        while (count < n) and plink_rows:
+            if len(plink_rows) > 1:
+                raise RuntimeError("Bad plink")
+            cur_ele = plink.child
+            plink_rows = db(db.participant_link.parent == cur_ele).select()
+            count += 1
+        return plink
+    else:
+        return None
 
 
 def build_participant_chains():
     ptc_table = {}
     for ptc in all_participants():
-        print("participant: {0}".format(ptc.id))
         chain = []
         head = ptc.head_element
         cur_ele = head
-        print("current element: {0}".format(cur_ele))
         plink_rows = db(db.participant_link.parent == cur_ele).select()
         while (plink_rows):
             if len(plink_rows) > 1:
@@ -346,12 +420,11 @@ def build_participant_chains():
             chain = extend_pelement_chain(cur_ele, chain)
             plink = plink_rows[0]
             cur_ele = plink.child
-            print("current element: {0}".format(cur_ele))
             plink_rows = db(db.participant_link.parent == cur_ele).select()
         chain = extend_pelement_chain(cur_ele, chain)
         ptc_table[ptc] = chain
-        print("chain {0}".format(repr(chain)))
     return ptc_table
+
 
 def extend_pelement_chain(cur_ele, chain):
     eleTerm = db(db.pelement2term.element == cur_ele).select()
