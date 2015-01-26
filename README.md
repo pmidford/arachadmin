@@ -5,7 +5,7 @@ accompanying tool to generate owl/rdf from the database.
 
 ## Copyright and License
 
-All original code (not part of web2py) is copyright 2013-2014 Peter E. Midford
+All original code (not part of web2py) is copyright 2013-2015 Peter E. Midford
 
 > This program is available under the terms of the 'MIT' license, a copy of which is included in this repository.
 
@@ -23,7 +23,9 @@ All original code (not part of web2py) is copyright 2013-2014 Peter E. Midford
 
 5. Get the current backend dump from figshare.
 
-6. Load the dump using: TBD
+6. Load the dump.  'catting' into a mysql client (e.g. cat arachadmin.sql | mysql -u <user> --password arachadmin) seems to work, but your mileage may vary.
+
+7. Configure arachadmin
 
 
 
