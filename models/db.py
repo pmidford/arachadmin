@@ -350,7 +350,7 @@ db.define_table('claim',
                                                     'narrative.id',
                                                     render_narrative))),
                 Field('publication_behavior', 'string'),
-                Field('behavior_term', 'reference term'),
+                Field('behavior_term', 'reference term', notnull=True),
                 Field('primary_participant',  # remove?
                       'reference participant',
                       requires=IS_EMPTY_OR(IS_IN_DB(db,
@@ -362,9 +362,9 @@ db.define_table('claim',
                 migrate=False)
 
 
-db.claim.behavior_term.requires = IS_EMPTY_OR(IS_IN_DB(behavior_domain,
-                                                       'term.id',
-                                                       '%(label)s'))
+db.claim.behavior_term.requires = IS_IN_DB(behavior_domain,
+                                           'term.id',
+                                           '%(label)s')
 
 
 db.define_table('participant2claim',

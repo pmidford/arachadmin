@@ -16,6 +16,7 @@ def list():
 
 
 def participant_form():
+    '''This is the function for the participant_form.load component'''
     if request.vars.participant is None:
         form = B('No participant selected')  # maybe a button here?
     else:
@@ -57,8 +58,11 @@ def make_initial_term_individual_fields():
                 make_labeled_button('participant', 'property'))]
 
 
+# dead code?
 def gen_new_participant_form():
     """initial form for creating a participant - used by new claim editor"""
+    if (1 > 0):
+        raise RuntimeError("should be dead code")
     claim_id = request.vars.claim
     fields = make_initial_participant_fields(claim_id)
     fields.append(BR())
@@ -82,8 +86,6 @@ def process_new_participant_form(form):
     var_set = {'publication_text': pub_text,
                'property': property,
                'claim': request.vars.claim}
-    print var_set
-    print "part type is {0}".format(part_type)
     if part_type == 'individual':
         ind_participant_form = LOAD('participant',
                                     'individual_participant_form.load',
@@ -93,26 +95,27 @@ def process_new_participant_form(form):
                                     content='loading participant editor')
         return {'form': ind_participant_form}
     else:  # assume term
-        print "about to load term_participant_form"
         tpf = LOAD('participant',
                    'term_participant_form.load',
                    target='participant_head',
                    vars=var_set,
                    ajax=True,
                    content='loading participant editor')
-        print("loaded {0}\n as term_participant_form".format(repr(tpf)))
         return {'form': tpf}
 
-
+# dead code?
 def make_initial_participant_fields(claim):
-    narrative = claim and db.claim(claim).narrative
-    if narrative:
-        return make_initial_term_individual_fields()
+    if (1 > 0):
+        raise RuntimeError("should be dead code")
+    if claim and db.claim(claim).narrative:
+        return make_initial_term_individual_fields() 
     else:
         return make_initial_term_only_fields()
 
-
+# dead code
 def make_initial_term_only_fields():
+    if (1 > 0):
+        raise RuntimeError("should be dead code")
     return [DIV(FIELDSET('publication string',
                          INPUT(_name='publication_string')),
                 BR()),
@@ -130,8 +133,10 @@ def make_labeled_button(val, group):
                           _name=group,
                           _value=val))
 
-
+# dead code
 def element_initial():
+    if (1 > 0):
+        raise RuntimeError("should be dead code")
     print("hit element_initial")
     form = FORM(INPUT(_type='text', _name='element'),
                 BR(),
@@ -142,6 +147,7 @@ def element_initial():
 
 
 def term_participant_form():
+    '''This is the function for the term_participant_form.load component'''
     form = FORM('Choose a domain',
                 make_labeled_button('taxonomy', 'domain'),
                 BR(),
@@ -172,6 +178,9 @@ def term_participant_form():
 
 
 def term_from_domain():
+    '''This is the function for the term_from_domain.load component.  It puts
+    up an appropriate list of candidate terms based on the domain specified by
+    the previous form'''
     if request.vars.domain == 'taxonomy':
         field_domain = taxon_domain
     elif request.vars.domain == 'anatomy':
@@ -211,6 +220,9 @@ def term_from_domain():
 
 
 def individual_participant_form():
+    '''This is the function for the individual_participant_form.load component.  It puts
+    up an appropriate list of candidate individuals based on the narrative specified for
+    the claim.'''
     claim_id = request.vars.claim
     sel = build_individual_list(claim_id)
     form = FORM('Choose an individual',
@@ -234,6 +246,8 @@ def individual_participant_form():
 
 
 def build_individual_list(claim_id):
+    '''Returns an HTML select with labels of individuals mapped to their
+    id's'''
     narrative = db.claim(claim_id).narrative
     i2n_map = db(db.individual2narrative.narrative == narrative).select()
     i_ids = [mapping.individual for mapping in i2n_map]
@@ -243,9 +257,11 @@ def build_individual_list(claim_id):
         result.append(OPTION(pair[1],  _value=pair[0]))
     return SELECT(name='choose an individual', _name='ind_choice', *result)
 
-
+#Probably dead code
 def enter():
     """ Improved element focussed entry """
+    if (1 > 0):
+        raise RuntimeError("should be dead code")
     form = FORM(FIELDSET('term',
                          INPUT(_type='radio',
                                _name='participant_type',
@@ -295,6 +311,8 @@ def get_element_args(req):
     return element
 
 
+# dead code or the function for the pelement.load component?  If later, 
+# delete corresponding views
 def pelement():
     ele = get_element_args(request)
     if ele:
@@ -411,7 +429,6 @@ def make_element_link_table(link_rows):
                 parent_entity = db.individual[parent_m2.individual]
             else:
                 parent_entity = None
-        print "got parent"
         property_prop = db.property[row.property]
         item = {'child': child_entity.label,
                 'parent': parent_entity.label,
@@ -431,7 +448,8 @@ def lookup_pelement_individual_map(element):
 
 
 def elementlink():
-    """builds form for setting link property of new link"""
+    """This is the function for the elementlink callback in add_sibling.load.
+    It builds form for setting link property of new link"""
     link_id = request.vars['link_id']
     form = SQLFORM(db.participant_link,
                    record=link_id,
@@ -443,6 +461,9 @@ TERM_TYPES = ['some_term', 'intersection', 'union', 'only_term']
 
 
 def add_child():
+    """This is the function for the add_head callback attached to 
+    the Add Child button created by _build_element_buttons.
+    It builds a form for adding a child to an element"""
     parent = get_element_args(request)
     print "parent = {0}".format(parent)
     pt_field = Field('type',
@@ -490,6 +511,9 @@ def add_child():
 
 
 def add_head():
+    """This is the function for the add_head callback attached to 
+    the Add Child button created by _build_head_buttons.
+    It builds a form for adding a child to an element"""
     parent = get_element_args(request)
     print "parent = {0}".format(parent)
     pt_field = Field('type',
@@ -536,6 +560,10 @@ def add_head():
 
 
 def add_sibling():
+    """This is the function for the add_sibling callback attached to 
+    the Add Child button created by _build_element_buttons.
+    It builds a form for adding a sibling (child of element's parent)
+    to the participant"""
     # TODO finish implementation
     ele = db.participant_element.insert()
     sibling = get_element_args(request)
@@ -547,6 +575,10 @@ def add_sibling():
 
 
 def finish_individual_head():
+    """This is the function for the add_head component loaded by add_head.
+    The Add Child button created by _build_head_buttons.
+    It builds a form for adding a child to an element"""
+    import participant_tools
     claim_id = -1*int(request.vars.parent)
     form = build_individual_form(claim_id)
     if form.process().accepted:
@@ -560,14 +592,16 @@ def finish_individual_head():
         db.participant2claim.insert(claim=claim_id,
                                     participant=new_part,
                                     property=property_id)
-        print "form vars: %s" % repr(form.vars.ind_choice)
         np_row = db(db.participant.id == new_part).select().first()
         np_row.update_record(head_element=element_id)
+        participant_tools.update_one_participant(db, new_part)
         redirect(request.env.http_web2py_component_location, client_side=True)
     return {'form': form}
 
 
 def build_individual_form(claim_id):
+    "Returns a form containing a list of individuals to choose from"
+    # Should check for redundency
     sel = build_individual_list(claim_id)
     return FORM('Choose an individual',
                 BR(),
@@ -577,6 +611,8 @@ def build_individual_form(claim_id):
 
 
 def finish_individual_tail():
+    """This is the function for the finish_individual_tail component.
+    It builds and returns a form"""
     parent = request.vars.parent
     part_id = db.participant_element(parent).participant
     part2claim_map = db(db.participant2claim.participant == part_id).select().first()
@@ -585,19 +621,18 @@ def finish_individual_tail():
     if form.process().accepted:
         property_id = request.vars.property
         ind_id = form.vars.ind_choice
-        print("Checkpoint 1")
         individual_code = get_participant_code('individual')
-        print("Checkpoint 2")
         element_id = insert_participant_element(part_id, individual_code)
-        print("element_id = %s" % element_id)
         insert_element2ind_map(element_id, ind_id)
         insert_participant_link(parent, element_id, get_partof_property())
-        print "form vars: %s" % repr(form.vars.ind_choice)
         redirect(request.env.http_web2py_component_location, client_side=True)
     return {'form': form}
 
 
 def choose_domain():
+    """This is the function for the choose_domain component.
+    It processes the response from a form built by the following
+    function."""
     form = domain_choice_form()
     if form.process().accepted:  # validators?
         element_type = request.vars.element_type
@@ -617,6 +652,9 @@ def choose_domain():
 
 
 def domain_choice_form():
+    """This returns an HTML form with radio buttons to select
+    a domain which filters down the list of possible terms.
+    Note that the list is incomplete but sufficient for the moment""" 
     return FORM('Choose a domain',
                 FIELDSET('taxonomy',
                          INPUT(_type='radio',
@@ -632,6 +670,10 @@ def domain_choice_form():
 
 
 def finish_term():
+    """This is the function for the finish_term component, which is
+    loaded by thechoose_domain component.
+    It uses the domain to filter a dropdown list of terms to those
+    in the appropriate domain."""
     print "want to finish term"
     if request.vars.domain == 'taxonomy':
         field_domain = taxon_domain
@@ -648,11 +690,6 @@ def finish_term():
         term = form.vars.term
         parent = int(request.vars.parent)
         property_id = request.vars.property
-        print "selected term {0}".format(str(term))
-        print "passed element_type is {0}".format(request.vars.element_type)
-        print "passed parent is {0}".format(parent)
-        print "participant_code {0}".format(participant_type_id)
-        print "property {0}".format(property_id)
         if parent > 0:
             finish_tail_term(term,
                              request.vars.element_type,
@@ -696,6 +733,8 @@ def get_participant_code(type_str):
 
 
 def lookup_participant(parent):
+    """Helper that returns the 'current' participant by retrieving it from the
+    parent of the (soon to be created) child element"""
     print "parent={0}".format(repr(parent))
     parent_element = db.participant_element(parent)
     return parent_element.participant
@@ -713,8 +752,10 @@ def insert_element2term_map(ele_id, term_id):
 def insert_element2ind_map(ele_id, i_id):
     return db.pelement2individual.insert(element=ele_id, individual=i_id)
 
-
+# dead code?
 def finish_child():
+    if (1 > 0):
+        raise RuntimeError("should be dead code")
     parent = get_element_args(request)
     eler = db.participant_element(ele)
     insert_participant_link(parent, ele, get_partof_property())
@@ -739,7 +780,7 @@ def finish_child():
                 lnt=lnt,
                 add_buttons=add_buttons)
 
-
+# might be dead...
 def get_entity(ele):
     """finds the entity (term or individual) for this element
        returns the entity id and label"""

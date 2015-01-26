@@ -119,7 +119,8 @@ def claim_form():
     claim = request.vars['claim']
     form = SQLFORM(db.claim, claim)
     if form.process().accepted:
-        print request.vars.claim
+        # URL tries to load .../enter.load, which fails
+        redirect('/arachadmin/claim/enter/' + str(form.vars.id),client_side=True)
     return {'form': form}
 
 
@@ -226,6 +227,7 @@ def make_link_table(claim):
 
 def update_tool():
     """Something to update the representation of participants"""
+    import participant_tools.py
     result = []
     (some_code,
      only_code,
@@ -243,16 +245,9 @@ def update_tool():
                 elements = get_elements(p_id)
                 if len(elements) == 0:
                     old_claim_update(elements, participant, p_id)
-                if participant.substrate:
-                    print "found substrate"
-                    if not(check_existing_substrate(claim.id)):
-                        # assume for now that substrates are SOME expressions
-                        substrate_element(participant.substrate, claim.id)
-                    else:
-                        print "substrate participant exists, not updated"
                 elements = get_elements(p_id)
                 result.append((p_id, len(elements)))
-    update_participants()
+    participant_tools.update_participants(db)
     return {'update_report': result}
 
 
@@ -310,7 +305,15 @@ def old_claim_update(elements, participant, p_id):
                         participant.update_record(head_element=ana_id)
                     else:
                         print "participant %d has no anatomy" % p_id
+    if participant.substrate:
+        print "found substrate"
+        if not(check_existing_substrate(claim.id)):
+            # assume for now that substrates are SOME expressions
+            substrate_element(participant.substrate, claim.id)
+        else:
+            print "substrate participant exists, not updated"
     return
+
 
 def get_elements(p_id):
     '''returns row set of participant elements for this participant'''
@@ -319,129 +322,9 @@ def get_elements(p_id):
 
 def check_existing_substrate(claim_id):
     p_list = db(db.participant2claim.claim == claim_id).select()
-    print "in check existing_substrate"
-    print p_list
     return len(p_list) == 2
 
 
-def update_participants():
-    '''this will eventually fix a problem where the structure of individual 
-    participants is not 
-    captured in element chains when used secondarily in subsequent participants'''
-    ptc_table = build_participant_chains()
-    ptc_keys = ptc_table.keys()  # grab once, so order of traveral is consistent
-    for ptc in ptc_keys:
-        print("participant: {0}".format(ptc.id))
-        chain = ptc_table[ptc]
-        for ele_spec1 in chain:
-            if ele_spec1[0] == 'Individual':
-                ele_score = len(chain) - chain.index(ele_spec1)
-                best = best_element_match(ptc, ptc_table, ptc_keys, ele_spec1)
-                if best[0] > ele_score:
-                    print("Element needs updating; score = {0}, chain = {1}".format(ele_score, chain))
-                    msg_str = "Best Match len = {0}\n\t ele2 = {1}\n\t chain = {2}"
-                    print(msg_str.format(best[0],
-                                         best[1],
-                                         best[2]))
-                    print get_plink_n(ptc, chain.index(ele_spec1))
-                    fix_element_chain(ptc, ele_spec1, chain, best)
-
-
-def fix_element_chain(ptc, element_spec, chain, best):
-    ''' actually extends the element chain '''
-    indiv_code = get_participant_code('individual')
-    properties = get_properties()
-    best_score, ptc2_id, best_chain = best
-    chain_index = len(best_chain) - best_score + 1
-    new_template = best_chain[chain_index:]
-    start = get_plink_n(ptc,chain.index(element_spec))
-    if start is None: # start is head element
-        print("chain_index = {0}, new_template = {1}".format(chain_index, new_template))
-        clink = new_template[0]
-        clink_type = clink[0]
-        assert clink_type == 'Individual'
-        ind_id = clink[1]
-        ele_id = insert_participant_element(ptc.id,indiv_code)
-        insert_element2indiv_map(ele_id, ind_id)
-        insert_participant_link(ptc.head_element,ele_id,properties['part_of'])
-        head_ele = db.participant_link(ptc.head_element)
-    else:   # start is in a chain already
-        pass
-    return None
-
-
-
-
-
-def best_element_match(ptc, ptc_table, ptc_keys, ele_spec1):
-    best_part = None
-    longest_match = 0
-    for ptc2 in ptc_keys:
-        chain2 = ptc_table[ptc2]
-        if ele_spec1 in chain2:
-            len2 = len(chain2) - chain2.index(ele_spec1)
-            if len2 > longest_match:
-                longest_match = len2
-                best_part = (longest_match, ptc2.id, chain2)
-    if best_part:
-        return best_part
-    else:
-        return None
-
-def get_plink_n(ptc, n):
-    print "n = {0}".format(n)
-    cur_ele = ptc.head_element
-    count = 0
-    print cur_ele
-    plink_rows = db(db.participant_link.parent == cur_ele).select()
-    if plink_rows:
-        plink = plink_rows[0]
-        while (count < n) and plink_rows:
-            if len(plink_rows) > 1:
-                raise RuntimeError("Bad plink")
-            cur_ele = plink.child
-            plink_rows = db(db.participant_link.parent == cur_ele).select()
-            count += 1
-        return plink
-    else:
-        return None
-
-
-def build_participant_chains():
-    ptc_table = {}
-    for ptc in all_participants():
-        chain = []
-        head = ptc.head_element
-        cur_ele = head
-        plink_rows = db(db.participant_link.parent == cur_ele).select()
-        while (plink_rows):
-            if len(plink_rows) > 1:
-                raise RuntimeError("Bad plink")
-            chain = extend_pelement_chain(cur_ele, chain)
-            plink = plink_rows[0]
-            cur_ele = plink.child
-            plink_rows = db(db.participant_link.parent == cur_ele).select()
-        chain = extend_pelement_chain(cur_ele, chain)
-        ptc_table[ptc] = chain
-    return ptc_table
-
-
-def extend_pelement_chain(cur_ele, chain):
-    eleTerm = db(db.pelement2term.element == cur_ele).select()
-    eleIndiv = db(db.pelement2individual.element == cur_ele).select()
-    if eleTerm:
-        chain_link = ("Term", eleTerm[0].term)
-        chain.append(chain_link)
-    elif eleIndiv:
-        chain_link = ("Individual", eleIndiv[0].individual)
-        chain.append(chain_link)
-    else:
-        print "bad element"
-    return chain
-
-
-def all_participants():
-    return db(db.participant.id >0).select()
 
 def substrate_element(sub_term, claim_id):
     # sub_expr is term id of substrate
@@ -498,11 +381,8 @@ def insert_participant_element(participant_id, type_id):
 
 
 def insert_element2term_map(ele_id, term_id):
-    print 'Inserting %d to term %d' % (ele_id, term_id)
     p2t_map = db.pelement2term.insert(element=ele_id, term=term_id)
     db.commit()
-    print db.pelement2term[p2t_map]
-    print 'Done Inserting %d to term %d to %d' % (ele_id, term_id, p2t_map)
 
 
 def insert_element2indiv_map(ele_id, indiv_id):
@@ -515,9 +395,11 @@ def insert_participant_link(parent_id, child_id, property_id):
                                child=child_id,
                                property=property_id)
 
-
+# seems to be dead code
 def lookup_individual(label, term, narrative):
     """first pass at looking up an individual from its label"""
+    if (1 > 0):
+        raise RuntimeException("should be dead code")
     # TODO: add narrative to this query
     if label is None:
         print "no label in lookup"
@@ -535,10 +417,12 @@ def lookup_individual(label, term, narrative):
             print "Multiple matching individuals"
             return rows
 
-
+# dead code?
 def insert_individual(label, term, narrative):
     """looks up an individual by label and term (type) and
        updates db to associate it to the narrative"""
+    if (1 > 0):
+        raise RuntimeException("should be dead code")
     ind = db.individual.insert(label=label, term=term)
     if narrative:
         db.individual2narrative.insert(individual=ind, narrative=narrative)
@@ -554,7 +438,7 @@ def build_element_graph(claim):
     participants = [row.participant for row in p2c_map]
     elements = []
     for p_id in participants:
-        elist = db(db.participant_element.participant == p_id).select()
+        elist = get_elements(p_id)
         elements.extend(elist)
     element_list = []
     edge_list = []
