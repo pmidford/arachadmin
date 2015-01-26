@@ -58,17 +58,6 @@ def make_initial_term_individual_fields():
                 make_labeled_button('participant', 'property'))]
 
 
-# dead code?
-def gen_new_participant_form():
-    """initial form for creating a participant - used by new claim editor"""
-    if (1 > 0):
-        raise RuntimeError("should be dead code")
-    claim_id = request.vars.claim
-    fields = make_initial_participant_fields(claim_id)
-    fields.append(BR())
-    fields.append(INPUT(_type='submit'))
-    return FORM(*fields)
-
 
 PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/BFO_0000056'
 ACTIVELY_PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/RO_0002217'
@@ -103,47 +92,12 @@ def process_new_participant_form(form):
                    content='loading participant editor')
         return {'form': tpf}
 
-# dead code?
-def make_initial_participant_fields(claim):
-    if (1 > 0):
-        raise RuntimeError("should be dead code")
-    if claim and db.claim(claim).narrative:
-        return make_initial_term_individual_fields() 
-    else:
-        return make_initial_term_only_fields()
-
-# dead code
-def make_initial_term_only_fields():
-    if (1 > 0):
-        raise RuntimeError("should be dead code")
-    return [DIV(FIELDSET('publication string',
-                         INPUT(_name='publication_string')),
-                BR()),
-            P('Claim is not part of narrative, individuals not available'),
-            DIV('Choose participant level',
-                BR(),
-                make_labeled_button('active participant', 'property'),
-                BR(),
-                make_labeled_button('participant', 'property'))]
-
 
 def make_labeled_button(val, group):
     return FIELDSET(val,
                     INPUT(_type='radio',
                           _name=group,
                           _value=val))
-
-# dead code
-def element_initial():
-    if (1 > 0):
-        raise RuntimeError("should be dead code")
-    print("hit element_initial")
-    form = FORM(INPUT(_type='text', _name='element'),
-                BR(),
-                INPUT(_type='submit'))
-    if form.process().accepted:
-        print request.vars.element
-    return {'form': form}
 
 
 def term_participant_form():
@@ -257,47 +211,6 @@ def build_individual_list(claim_id):
         result.append(OPTION(pair[1],  _value=pair[0]))
     return SELECT(name='choose an individual', _name='ind_choice', *result)
 
-#Probably dead code
-def enter():
-    """ Improved element focussed entry """
-    if (1 > 0):
-        raise RuntimeError("should be dead code")
-    form = FORM(FIELDSET('term',
-                         INPUT(_type='radio',
-                               _name='participant_type',
-                               _value='term')),
-                BR(),
-                FIELDSET('individual',
-                         INPUT(_type='radio',
-                               _name='participant_type',
-                               _value='individual')),
-                BR())
-    if form.process().accepted:  # validators?
-        type_label = db.participant_type(form.vars.type).label
-        property_label = db.property(form.vars.property).label
-        print "type_label is {}".format(type_label)
-        print "property is {}".format(property_label)
-        if type_label == 'individual':
-            print "want to load finish_individual (1)"
-            return LOAD("participant",
-                        'finish_individual.load',
-                        target='add_element',
-                        ajax=True,
-                        content='loading individual editor....')
-        elif type_label in TERM_TYPES:
-            print "want to load finish_term"
-            choose_vars = {'element_type': form.vars.type,
-                           'property': property,
-                           'parent': parent}
-            return LOAD("participant",
-                        'choose_domain.load',
-                        vars=choose_vars,
-                        target='add_element',
-                        ajax=True,
-                        content='loading term editor....')
-        else:
-            print "Fell through"
-    return {'form': form}
 
 
 def get_element_args(req):
@@ -311,8 +224,6 @@ def get_element_args(req):
     return element
 
 
-# dead code or the function for the pelement.load component?  If later, 
-# delete corresponding views
 def pelement():
     ele = get_element_args(request)
     if ele:
@@ -752,33 +663,6 @@ def insert_element2term_map(ele_id, term_id):
 def insert_element2ind_map(ele_id, i_id):
     return db.pelement2individual.insert(element=ele_id, individual=i_id)
 
-# dead code?
-def finish_child():
-    if (1 > 0):
-        raise RuntimeError("should be dead code")
-    parent = get_element_args(request)
-    eler = db.participant_element(ele)
-    insert_participant_link(parent, ele, get_partof_property())
-    # need to set up the parent links
-    print "eler is %s" % repr(eler)
-    lnr = db(db.participant_link.child == ele).select()
-    print "lnr is %s" % repr(lnr)
-    lnt = make_element_link_table(lnr)
-    print "lnt is %s" % repr(lnt)
-    (entity, entity_label) = get_entity(ele)
-    # part_row = render_participant(db.participant[eler.participant])
-    print "entity is %s " % repr(entity)
-    eform = SQLFORM(db.participant_element,
-                    record=ele,
-                    fields=['type'],
-                    showid=False)
-    add_buttons = _build_element_buttons(ele)
-    return dict(ele=ele,
-                epart="test_row",  # part_row,
-                etr=entity_label,
-                eform=eform,
-                lnt=lnt,
-                add_buttons=add_buttons)
 
 # might be dead...
 def get_entity(ele):

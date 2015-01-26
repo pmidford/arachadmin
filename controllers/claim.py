@@ -243,76 +243,9 @@ def update_tool():
             for p_id in participants:
                 participant = p_id
                 elements = get_elements(p_id)
-                if len(elements) == 0:
-                    old_claim_update(elements, participant, p_id)
-                elements = get_elements(p_id)
                 result.append((p_id, len(elements)))
     participant_tools.update_participants(db)
     return {'update_report': result}
-
-
-def old_claim_update(elements, participant, p_id):
-    """This should be dead code at this point"""
-    tax_id = None
-    ana_id = None
-    if (1 > 0):
-        raise RuntimeException("This code should be dead - old_claim_update")
-    print "Test2: %s %s" % (repr(participant), repr(p_id))
-    if participant.taxon:
-        if (participant.quantification == 'some'):
-            tax_id = insert_participant_element(p_id,
-                                                some_code)
-            insert_element2term_map(tax_id, participant.taxon)
-        elif (participant.quantification == 'individual'):
-            ind = lookup_individual(participant.label,
-                                    participant.taxon,
-                                    claim.narrative)
-            if ind is None:
-                ind = insert_individual(participant.label,
-                                        participant.taxon,
-                                        claim.narrative)
-                tax_id = insert_participant_element(p_id,
-                                                    indiv_code)
-                insert_element2indiv_map(tax_id, ind)
-            else:
-                print "participant %d has no taxon" % p_id
-                if participant.anatomy:
-                    if (participant.quantification == "some"):
-                        ana_id = insert_participant_element(p_id,
-                                                            some_code)
-                        insert_element2term_map(ana_id,
-                                                participant.anatomy)
-                        insert_participant_link(ana_id,
-                                                tax_id,
-                                                properties['part_of'])
-                        participant.update_record(head_element=ana_id)
-                    elif (participant.quantification == 'individual'):
-                        ana_label = get_term_label(participant.anatomy)
-                        ind_label = ana_label + " of " + participant.label
-                        ind = lookup_individual(ind_label,
-                                                participant.anatomy,
-                                                claim.narrative)
-                        if ind is None:
-                            ind = insert_individual(ind_label,
-                                                    participant.anatomy,
-                                                    claim.narrative)
-                        ana_id = insert_participant_element(p_id,
-                                                            indiv_code)
-                        insert_element2indiv_map(ana_id, ind)
-                        insert_participant_link(ana_id,
-                                                tax_id,
-                                                properties['part_of'])
-                        participant.update_record(head_element=ana_id)
-                    else:
-                        print "participant %d has no anatomy" % p_id
-    if participant.substrate:
-        print "found substrate"
-        if not(check_existing_substrate(claim.id)):
-            # assume for now that substrates are SOME expressions
-            substrate_element(participant.substrate, claim.id)
-        else:
-            print "substrate participant exists, not updated"
-    return
 
 
 def get_elements(p_id):
@@ -394,40 +327,6 @@ def insert_participant_link(parent_id, child_id, property_id):
     db.participant_link.insert(parent=parent_id,
                                child=child_id,
                                property=property_id)
-
-# seems to be dead code
-def lookup_individual(label, term, narrative):
-    """first pass at looking up an individual from its label"""
-    if (1 > 0):
-        raise RuntimeException("should be dead code")
-    # TODO: add narrative to this query
-    if label is None:
-        print "no label in lookup"
-        query = db(db.individual.term == term)
-    else:
-        query = db((db.individual.label == label) &
-                   (db.individual.term == term))
-    if query.isempty():
-        return None
-    else:
-        rows = query.select()
-        if len(rows) == 1:
-            return rows.first()
-        else:
-            print "Multiple matching individuals"
-            return rows
-
-# dead code?
-def insert_individual(label, term, narrative):
-    """looks up an individual by label and term (type) and
-       updates db to associate it to the narrative"""
-    if (1 > 0):
-        raise RuntimeException("should be dead code")
-    ind = db.individual.insert(label=label, term=term)
-    if narrative:
-        db.individual2narrative.insert(individual=ind, narrative=narrative)
-    return ind
-
 
 def build_element_graph(claim):
     """this generates lists of elements and edges"""
