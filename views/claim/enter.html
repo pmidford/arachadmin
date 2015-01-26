@@ -1,24 +1,149 @@
 {{extend 'layout.html'}}
+{{include 'web2py_ajax.html'}}
 <h1>Enter/edit record for a claim/observation</h1>
 <DIV class="row">
    <DIV class="span6">
        <h3>Claim/Observation form</h3>
-      {{=main_form}}
-       <h3>Table of associated participants</h3>
-      {{headers=['claim','participant','index']}}
-      {{=TABLE(
-         THEAD(TR(*[TH(header) for header in headers])),
-         TBODY(*[TR(TD(row['claim']),
-                    TD(A(row['participant'],_href=row['participant_link'])),
-                    TD(row['index']))
-         for row in link_table]))}}
+       {{=claim_form}}
+       {{=A(T("Enter New Claim/Observation"), 
+            _href=URL('arachadmin','claim','enter'), 
+            _class='btn',
+            _style='margin-top: 1em;')}}
+       <br/>
+       {{if link_table:}}
+          {{=H3("Table of associated participants")}}
+          {{headers=['claim','participant','predicate']}}
+          {{=TABLE(
+             THEAD(TR(*[TH(header) for header in headers])),
+             TBODY(*[TR(TD(row['claim']),
+                        TD(A(row['participant'],_href=row['participant_link'])),
+                        TD(row['property']))
+             for row in link_table]))}}
+          {{pass}} 
    </DIV>
    <DIV class="span6">
-       <h3>Participant form</h3>
-      {{=participant_form}}
+       <DIV id="participant_head">
+	 {{if participant_form:}}
+	     {{=participant_form}}
+         {{pass}}
+       </DIV>
+       <DIV class="pelement">
+          <p id="active_element">
+          </p>
+       </DIV>
    </DIV>
 </DIV>
-<br/>
-{{=A(T("Enter New Claim/Observation"), _href=URL('arachadmin','claim','enter'), _class='btn',
-     _style='margin-top: 1em;')}}
-<br/>
+<DIV class="row">
+  <DIV class="foo">
+  </DIV>
+  {{ele_count = len(element_list)}}
+  {{edge_count = len(edge_list)}}
+  {{def node_label(index):}}
+      {label: {{=XML(repr(element_list[index][0]))}}, size:{{=len(element_list[index][0])}} }
+  {{return}}
+  {{def edge_draw(index):}}
+      {source: {{=edge_list[index][0]}}, target: {{=edge_list[index][1]}}, color: {{=XML(repr(edge_list[index][2]))}} }
+  {{return}} 
+  {{def gen_click(index):}}
+      $({{=XML(repr('#' + element_list[index][0]))}})
+        .click(function(){ajax("{{=URL('participant','pelement.load',args=element_list[index][1])}}" , '', 'active_element');}) 
+  {{return}}
+
+  <SCRIPT>
+    var width = 960;
+    var height = 500;
+
+    var graph = 
+       {nodes: [
+         {{for count in xrange(ele_count):}}
+           {{node_label(count)}}
+           {{if count<(ele_count-1):}} , {{pass}}
+           {{pass}}
+        ],
+       links: [
+         {{for count in xrange(edge_count):}}
+           {{edge_draw(count)}}
+           {{if count<(edge_count-1):}} , {{pass}}
+           {{pass}}
+        ]
+    }
+
+
+    var radius = d3.scale.sqrt()
+        .range([0, 6]);
+
+    var svg = d3.select(".foo").append("svg");
+
+    svg.attr("width", width)
+       .attr("height",height);
+
+
+    var force = d3.layout.force()
+        .size([width, height])
+        .charge(-400)
+        .linkDistance(function(d) { 
+                         return radius(d.source.size*2) + 
+                                 radius(d.target.size*2) + 40; });
+
+    
+    force.nodes(graph.nodes)
+         .links(graph.links)
+         .on("tick", tick)
+         .start();
+
+    var link = svg.selectAll(".link")
+         .data(graph.links)
+         .enter().append("g")
+         .attr("class", "link");
+
+    link.append("line")
+        .style("stroke-width", function(d) { return "2px"; });
+
+    var node = svg.selectAll(".node")
+         .data(graph.nodes)
+         .enter().append("g")
+         .attr("class", "node")
+         .attr("id", function(d) {return d.label; })
+         .call(force.drag);
+
+    node.append("rect")
+        .style("fill", "lightblue");
+
+    node.append("text")
+        .attr("dy", ".35em")
+        .attr("text-anchor", "middle")
+        .text(function(d) {return d.label; });
+
+    function tick() {
+        link.selectAll("line")
+            .attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; })
+	    .style("stroke", function(d) { return d.color; })
+
+        node.selectAll("rect")
+            .attr("x", function(d) {return d.x - 3*d.size; })
+            .attr("y", function(d) {return d.y - 10; })
+            .attr("height", function(d) {return 20; })
+            .attr("width", function(d) {return 6*d.size; })
+        node.selectAll("text")
+            .attr("x", function(d) { return d.x; })
+            .attr("y", function(d) { return d.y; });
+                  
+   }
+
+    $(document).ready(function(){
+       {{if len(element_list)>0:}}
+          ajax("{{=URL('participant','pelement.load',args=element_list[0][1])}}" , '', 'active_element');
+          {{pass}}
+       {{for count in xrange(ele_count):}}
+           {{gen_click(count)}}
+           {{if count<(ele_count-1):}} , {{pass}}
+           {{pass}}
+        ;
+
+    })
+    
+  </SCRIPT>
+</DIV>

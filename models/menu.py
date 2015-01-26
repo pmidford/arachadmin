@@ -30,8 +30,6 @@ response.menu = [
         ('Authors', False, URL('author', 'list', [])),
         ('Narratives', False, URL('narrative', 'list', [])),
         ('Claims', False, URL('claim', 'list', [])),
-        ('Behavior Terms', False, URL('behavior_term', 'list', [])),
-        ('Anatomy Terms', False, URL('anatomy_term', 'list'), []),
         ('Taxa (non-NCBI)', False, URL('taxon', 'list'), [])
     ]),
     (T('Tools'), False, URL('default', 'index'), [
@@ -41,6 +39,7 @@ response.menu = [
             URL('publication', 'status_tool', [])),
         ('Author Update Tool', False, URL('author', 'update_tool', [])),
         ('Claim Status Tool', False, URL('claim', 'status_tool', [])),
+        ('Claim Update Tool', False, URL('claim', 'update_tool', [])),
         ('Ontology Update Tool', False, URL('ontology', 'index', []))
     ])
 

@@ -1,0 +1,25 @@
+<h3>
+{{if etype=='participant':}}
+Participant Element
+{{elif etype=='head':}}
+Claim Header
+{{else:}}
+Unknown Participant Component
+{{pass}}
+</h3>
+{{if etype=='participant':}}
+{{=eform}}
+{{pass}}
+{{if etype=='participant':}}
+     {{=add_buttons['child_button']}}
+     {{=add_buttons['sibling_button']}}
+{{else:}}
+     {{=add_buttons['child_button']}}
+{{pass}}
+<div id="linkform"></div>
+<h3>Link table</h3>
+{{headers=['type','parent']}}
+
+
+
+

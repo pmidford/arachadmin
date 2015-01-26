@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # coding: utf8
-from gluon import *
+# from gluon import *
 
 def build_groups(authors):
     groups = []
@@ -16,14 +16,29 @@ def build_groups(authors):
         quality_sort(g)
     return groups
 
-def row_match(current_row,group_head):
+
+def row_match(current_row, group_head):
     current_last = current_row['last_name']
     current_given = current_row['given_names'][0]
     group_last = group_head['last_name']
     group_given = group_head['given_names'][0]
-    return possible_match(current_last,current_given,group_last,group_given)
+    return possible_match(current_last,
+                          current_given,
+                          group_last,
+                          group_given)
+
 
 def possible_match(last1,given1,last2,given2):
+    """
+    >>> possible_match("Midford", "Peter", "Midford", "Peter")
+    True
+    >>> possible_match("Midford", "Peter", "Midford", "Paul")
+    True
+    >>> possible_match("Midford", "Peter", "Midford", "Rob")
+    False
+    >>> possible_match("Midford", "Peter", "Arendt", "Julie")
+    False
+    """
     if (last1 != last2):
         return False
     else:
@@ -37,4 +52,20 @@ def row_key(row):
     
 
 def more_complete_name(last1,given1,last2,given2):
+    # Needs more work
     return (len(given1) > len(given2))
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='check for testing option')
+    parser.add_argument("--test", help="activate testing", action="store_true")
+    parser.add_argument("--verbose", help="verbose test output", action="store_true")
+    args = parser.parse_args()
+    if args.test:
+        import doctest
+        if args.verbose:
+            doctest.testmod(verbose=True)
+        else:
+            doctest.testmod(verbose=False)
+

@@ -46,6 +46,7 @@ def check_modified():
     ontologies = db().select(db.ontology_source.ALL)
     for ont in ontologies:
         source_update = check_date(ont.source_url)
+        print "Found timestr {0}".format(source_update)
         if source_update != '':
             source_update_struct = time.strptime(source_update.rstrip(),
                                                  UPDATE_FORMAT)
@@ -65,42 +66,68 @@ def check_modified():
         else:
             old_date_secs = None
         if source_update_secs or True:
-            if (old_date_secs is None) or (source_update_secs > old_date_secs):
+            if (old_date_secs is None) or (source_update_secs > old_date_secs) or True:
                 print "Need to update %s, date is %s" % (ont.name,
                                                          str(old_date))
                 type_name = db.ontology_processing[ont.processing].type_name
-                terms = update_ontology(ont,
-                                        type_name,
-                                        config,
-                                        request.application)
-                merge_terms(terms, ont)
+                (classes, object_properties) = update_ontology(ont,
+                                                               type_name,
+                                                               config,
+                                                               request.application)
+                merge_terms(classes, ont)
+                merge_properties(object_properties, ont)
                 t_now = datetime.now()
                 db(db.ontology_source.id == ont.id).update(last_update=t_now)
         ont.update()
     redirect('index')
 
 
-def merge_terms(terms, ont):
+def merge_terms(parsed_terms, ont):
     """
     adds any term in terms not in the term table.  String compare of
     id/uri is used for equality.  Probably not sufficient for merging
     taxonomy.
     """
     update_count = 0
-    for term in terms:
-        temp = None
+    for termvals in parsed_terms:
         new_id = -1
-        if isinstance(term, dict) and 'about' in term:
-            temp = term
-            term_irl = temp['about']
-            old_term = db(db.term.source_id == term_irl).select()
-            if len(old_term) == 0:
-                new_id = db.term.insert(source_id=temp['about'])
+        if isinstance(termvals, dict) and 'about' in termvals:
+            term_irl = termvals['about']
+            old_term = db(db.term.source_id == term_irl).select().first()
+            if old_term is None:
+                new_id = db.term.insert(source_id=termvals['about'])
                 update_count += 1
-                new_term = db(db.term.id == new_id)
-                if 'label' in temp:
-                    new_term.update(label=temp['label'])
-                if 'class_comment' in temp:
-                    new_term.update(comment=temp['class_comment'])
-                new_term.update(domain=ont.domain)
+                new_term = db(db.term.id == new_id).select().first()
+                fill_new_item(new_term, termvals)
+                new_term.domain = ont.domain
+                new_term.update_record()
     print "loaded %d terms from %s" % (update_count, ont.name)
+
+
+def fill_new_item(item, values):
+    if 'label' in values:
+        item.label = values['label']
+    if 'comment' in values:
+        item.comment = values['comment']
+    
+    
+
+def merge_properties(properties, ont):
+    """
+    adds any property in properties not in the property table.  String compare of
+    id/uri is used for equality.  
+    """
+    update_count = 0
+    for propvals in properties:
+        new_id = -1
+        if isinstance(propvals, dict) and 'about' in propvals:
+            prop_irl = propvals['about']
+            old_prop = db(db.property.source_id == prop_irl).select().first()
+            if old_prop is None:
+                new_id = db.property.insert(source_id=propvals['about'])
+                update_count += 1
+                new_prop = db(db.property.id == new_id).select().first()
+                fill_new_item(new_prop, propvals)
+                new_prop.domain = ont.domain
+                new_prop.update_record()
+    print "loaded %d object properties from %s" % (update_count, ont.name)

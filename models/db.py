@@ -143,6 +143,25 @@ db.define_table('authority',
                 format='%(name)s',
                 migrate=False)
 
+db.define_table('property',
+                Field('source_id', 'string', length=256),
+                Field('authority',
+                      'reference authority',
+                      ondelete='NO ACTION'),
+                Field('label', 'string', length=64),
+                Field('generated_id',
+                      'string',
+                      length=64,
+                      writable=False),
+                Field('comment','string', length=512),
+                format='%(label)s',
+                migrate=False)
+
+# util; probably should be somewhere else
+
+def get_property(uri):
+    return db(db.property.source_id == uri).select().first().id
+
 
 db.define_table('term',
                 Field('source_id', 'string'),
@@ -173,24 +192,46 @@ environment_domain_id = db(db.domain.name == 'environment').select().first().id
 # this is both incomplete and partially incorrect
 substrate_domains = db(db.domain.name == environment_domain_id)
 
-db.define_table('participant_link',
-                Field('predicate', 'reference term', ondelete='NO ACTION'),
-                Field('domain_individual', 
-                      'reference individual', 
-                      ondelete='NO ACTION'),
-                Field('domain_term',
-                      'reference term',
-                      ondelete='NO ACTION'),
-                Field('range_individual',
-                      'reference individual',
-                      ondelete='NO ACTION'),
-                Field('range_term',
-                      'reference term',
-                      ondelete='NO ACTION'),
+db.define_table('participant_type',
+                Field('label', 'string', length=20),
+                migrate=False)
+
+db.define_table('participant_element',
+                Field('type',
+                      'reference participant_type',
+                      requires=IS_EMPTY_OR(IS_IN_DB(db,
+                                                    'participant_type.id',
+                                                    '%(label)s'))),
+
                 Field('participant',
-                      'reference partipant',
+                      'reference participant',
                       ondelete='NO ACTION'),
                 migrate=False)
+
+db.define_table('participant_link',
+                Field('child', 'reference participant_element', ondelete='SET NULL'),
+                Field('parent', 'reference participant_element', ondelete='SET NULL'),
+                Field('property', 'reference property', ondelete='NO ACTION'),
+                migrate=False)
+
+db.define_table('pelement2term',
+                Field('element',
+                      'reference participant_element',
+                      ondelete='NO ACTION'),
+                Field('term',
+                      'reference term',
+                      ondelete='NO ACTION'),
+                migrate=False)
+
+db.define_table('pelement2individual',
+                Field('element',
+                      'reference participant_element',
+                      ondelete='NO ACTION'),
+                Field('individual',
+                      'reference individual',
+                      ondelete='NO ACTION'),
+                migrate=False)
+
 
 db.define_table('taxon',
                 Field('name', 'string', length=512),
@@ -247,8 +288,10 @@ def render_participant(r):
         head = "%s of %s" % (db.term(r.anatomy).label, db.term(r.taxon).label)
     elif r.taxon:
         head = str(db.term(r.taxon).label)
-    else:
+    elif r.substrate:
         head = str(db.term(r.substrate).label)
+    else:
+        head = "Undefined participant"
     return "%s %s" % (quan, head)
 
 VALID_QUANTIFICATIONS = ["some", "individual"]
@@ -272,12 +315,21 @@ db.define_table('participant',
                 Field('generated_id', 'string', writable=False),
                 Field('tail',
                       'reference participant_link',
-                       ondelete='NO ACTION'),
+                      readable=False,
+                      writable=False,
+                      ondelete='NO ACTION'),
                 Field('head',
                       'reference participant_link',
-                       ondelete='NO ACTION'),
+                      readable=False,
+                      writable=False,
+                      ondelete='NO ACTION'),
+                Field('publication_text', 'string', length=512),
+                Field('participation_property', 'reference property'),
+                Field('head_element',
+                      'reference participant_element',
+                      writable=False),
                 format=render_participant,
-                migrate=False)
+                migrate=True)
 
 db.participant.taxon.requires = IS_EMPTY_OR(IS_IN_DB(taxon_domain,
                                                      'term.id',
@@ -298,7 +350,7 @@ db.define_table('claim',
                                                     'narrative.id',
                                                     render_narrative))),
                 Field('publication_behavior', 'string'),
-                Field('behavior_term', 'reference term'),
+                Field('behavior_term', 'reference term', notnull=True),
                 Field('primary_participant',  # remove?
                       'reference participant',
                       requires=IS_EMPTY_OR(IS_IN_DB(db,
@@ -310,15 +362,15 @@ db.define_table('claim',
                 migrate=False)
 
 
-db.claim.behavior_term.requires = IS_EMPTY_OR(IS_IN_DB(behavior_domain,
-                                                       'term.id',
-                                                       '%(label)s'))
+db.claim.behavior_term.requires = IS_IN_DB(behavior_domain,
+                                           'term.id',
+                                           '%(label)s')
 
 
 db.define_table('participant2claim',
                 Field('claim', 'reference claim'),
                 Field('participant', 'reference participant'),
-                Field('participant_index', 'integer'),
+                Field('property', 'reference property'),
                 migrate=False)
 
 
