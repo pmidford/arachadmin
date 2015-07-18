@@ -1,0 +1,13 @@
+{{extend 'layout.html'}}
+<h1>This is the default/update_uid.html template</h1>
+{{=BEAUTIFY(response._vars)}}
+
+
+{{if 'message' in globals():}}
+<h3>{{=message}}</h3>
+{{pass}}
+
+<h1>
+    Update results
+</h1>
+{{=result}}

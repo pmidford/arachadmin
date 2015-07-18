@@ -29,6 +29,8 @@ OWL_OBJECT_PROPERTY = OWL_PREFIX + 'ObjectProperty'
 IAO_ANNOTATION = OBO_PURL_PREFIX + 'IAO_0000115'
 BFO_PART_OF = OBO_PURL_PREFIX + 'BFO_0000050'
 BFO_HAS_PARTICIPANT = OBO_PURL_PREFIX + 'BFO_0000057'
+RO_PART_OF = OBO_PURL_PREFIX + 'RO_0000050'
+RO_HAS_PARTICIPANT = OBO_PURL_PREFIX + 'RO_0000057'
 
 
 class ClassTarget(object):
@@ -165,7 +167,7 @@ def load_ontology(ont_url, processor, config, app_name):
     app_name - used to build the specification directory for the cache
     """
     local_file = cache_ontology(ont_url, config, app_name)
-    return load_locally(local_file, processor, taxonomy_root)
+    return load_locally(local_file, processor, config)
 
 
 def cache_ontology(ont_url, config, app_name):
@@ -175,9 +177,9 @@ def cache_ontology(ont_url, config, app_name):
     print "cache is %s" % cache
     local_file = open(copy_to_cache(ont_url, cache))
     return local_file
-    
 
-def load_locally(local_file, processor, taxonomy_root):
+
+def load_locally(local_file, processor, config):
     parser = etree.XMLParser(target=ClassTarget())
     (classes, object_properties) = etree.parse(local_file, parser)
     taxonomy_root = config.get('ontology', 'taxonomy_root')
@@ -318,4 +320,3 @@ if __name__ == "__main__":
             doctest.testmod(verbose=True)
         else:
             doctest.testmod(verbose=False)
-    

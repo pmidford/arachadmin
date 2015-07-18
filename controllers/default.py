@@ -48,6 +48,13 @@ def enter():
     return {'form': form}
 
 
+def uid_update():
+    import uid_tools
+    uid_tools.update_uids(db)
+    return {'result': 'Success'}
+
+# web2py defaults, not exposed
+
 def user():
     """
     exposes:

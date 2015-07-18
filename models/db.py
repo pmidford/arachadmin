@@ -26,14 +26,27 @@ else:
     dbname = conf.get("db", "dbname")
 
 
-db = DAL("mysql://%s:%s@%s/%s" % (user, password, host, dbname), migrate=True)
+db = DAL("mysql://%s:%s@%s/%s" % (user, password, host, dbname), migrate=False)
 
+
+# table of source and generated id's - this makes sure that generated id's are
+# unique across appropriate tables (publications, individuals, participants, etc.)
+db.define_table(
+    'uids',
+    Field('source_id', 'string', length=256),
+    Field('generated_id', 'string', length=64, unique=True),
+    migrate=False)
+
+
+
+# table of curation status (steps in curation process)
 db.define_table(
     'publication_curation',
     Field('status', 'string', writable=False, length=31),
     format='%(status)s',
     migrate=False)
 
+# minimal implementation of authorship - primarily for display and query
 db.define_table(
     'author',
     Field('last_name', 'string', writable=False, length=63),
@@ -44,12 +57,14 @@ db.define_table(
     format='%(last_name)s',
     migrate=False)
 
+# used for joining different representations of one author
 db.define_table(
     'author_merge',
     Field('preferred', 'reference author', ondelete='NO ACTION'),
     format='%(id)s',
     migrate=False)
 
+# main table for publications - reflects a spreadsheet used previously
 db.define_table(
     'publication',
     Field('publication_type', 'string', length=31),
@@ -76,9 +91,12 @@ db.define_table(
                                       'publication_curation.id',
                                       '%(status)s'))),
     Field('curation_update', 'datetime'),
+    Field('uids','reference uid',
+          requires=IS_EMPTY_OR(IS_IN_DB(db,'uids.id','%(id)s'))),
     format='%(author_list)s (%(publication_year)s)',
     migrate=False)
 
+# allows ordering of authors on a publication
 db.define_table('authorship',
                 Field('publication',
                       'reference publication',
@@ -96,22 +114,25 @@ db.define_table('authorship',
                 format='%(publication)s',
                 migrate=False)
 
+# should capture synonyms of a term
 db.define_table('synonym',
                 Field('text', 'string', length=512),
                 Field('term', 'reference term'),
                 migrate=False)
 
-
+# represents an individual organism, body part, substrate, etc.
 db.define_table('individual',
                 Field('source_id', 'string', length=512),
                 Field('generated_id', 'string', length=512, writable=False),
                 Field('label', 'string', length=64),
                 Field('term', 'reference term'),
+                Field('uids', 'reference uids'),
                 migrate=False)
+
 
 def render_narrative(n):
     """
-    generates something for a narrative
+    generates a printable representation for a narrative
     """
     if n.label:
         return n.label
@@ -122,20 +143,24 @@ db.define_table('narrative',
                 Field('publication', 'reference publication', ondelete='NO ACTION'),
                 Field('label', 'string', length=64),
                 Field('description', 'string', length=512),
+                Field('generated_id', 'string', length=512, writable=False),
+                Field('uids', 'reference uids'),
                 format='%(label)s',
                 migrate=False)
 
+# individuals are necessarily associated with at least one narrative
 db.define_table('individual2narrative',
                 Field('individual', 'reference individual'),
                 Field('narrative', 'reference narrative'),
                 migrate=False)
 
+# list of names subsets of concept space (taxonomy, chemistry, etc.)
 db.define_table('domain',
                 Field('name', 'string'),
                 format='%(name)s',
                 migrate=False)
 
-
+# people or groups responsible for source ontologies
 db.define_table('authority',
                 Field('name', 'string'),
                 Field('uri', 'string'),
@@ -143,13 +168,14 @@ db.define_table('authority',
                 format='%(name)s',
                 migrate=False)
 
+# OWL (object?) properties from source ontologies
 db.define_table('property',
                 Field('source_id', 'string', length=256),
                 Field('authority',
                       'reference authority',
                       ondelete='NO ACTION'),
                 Field('label', 'string', length=64),
-                Field('generated_id',
+                Field('generated_id',   # bogus
                       'string',
                       length=64,
                       writable=False),
@@ -158,11 +184,10 @@ db.define_table('property',
                 migrate=False)
 
 # util; probably should be somewhere else
-
 def get_property(uri):
     return db(db.property.source_id == uri).select().first().id
 
-
+# owl classes from source ontologies
 db.define_table('term',
                 Field('source_id', 'string'),
                 Field('authority',
@@ -173,13 +198,15 @@ db.define_table('term',
                       ondelete='NO ACTION'),
                 Field('label',
                       'string'),
-                Field('generated_id',
+                Field('generated_id',  # bogus
                       'string',
                       writable=False),
                 Field('comment', 'string'),
+                Field('uids', 'reference uids'),
                 format='%(label)s',
                 migrate=False)
 
+# set of domains used for defining filters
 behavior_domain_id = db(db.domain.name == 'behavior').select().first().id
 behavior_domain = db(db.term.domain == behavior_domain_id)
 anatomy_domain_id = db(db.domain.name == 'anatomy').select().first().id
@@ -189,13 +216,17 @@ taxon_domain = db(db.term.domain == taxonomy_domain_id)
 evidence_domain_id = db(db.domain.name == 'evidence').select().first().id
 evidence_domain = db(db.term.domain == evidence_domain_id)
 environment_domain_id = db(db.domain.name == 'environment').select().first().id
+
 # this is both incomplete and partially incorrect
 substrate_domains = db(db.domain.name == environment_domain_id)
 
+# participant may be individuals or one of several class expression types
+# this table holds the options
 db.define_table('participant_type',
                 Field('label', 'string', length=20),
                 migrate=False)
 
+# holds a class or individual (see pelement2term, pelement2individual)
 db.define_table('participant_element',
                 Field('type',
                       'reference participant_type',
@@ -208,12 +239,15 @@ db.define_table('participant_element',
                       ondelete='NO ACTION'),
                 migrate=False)
 
+# links parent to child participant_elements - chains may branch though none do
+# yet
 db.define_table('participant_link',
                 Field('child', 'reference participant_element', ondelete='SET NULL'),
                 Field('parent', 'reference participant_element', ondelete='SET NULL'),
                 Field('property', 'reference property', ondelete='NO ACTION'),
                 migrate=False)
 
+# associates a pelement with a term
 db.define_table('pelement2term',
                 Field('element',
                       'reference participant_element',
@@ -223,6 +257,7 @@ db.define_table('pelement2term',
                       ondelete='NO ACTION'),
                 migrate=False)
 
+# associates a pelement with an individual
 db.define_table('pelement2individual',
                 Field('element',
                       'reference participant_element',
@@ -232,27 +267,28 @@ db.define_table('pelement2individual',
                       ondelete='NO ACTION'),
                 migrate=False)
 
-
+# this is used to capture taxa that aren't in NCBI yet
 db.define_table('taxon',
                 Field('name', 'string', length=512),
                 Field('author', 'string', length=512),
                 Field('year', 'string', length=512),
                 Field('external_id', 'string', length=64),
-                Field('authority', 
-                      'reference authority', 
+                Field('authority',
+                      'reference authority',
                       ondelete='NO ACTION'),
                 Field('parent',
                       'reference taxon',
                       requires=IS_EMPTY_OR(IS_IN_DB(db,
                                                     'taxon.id',
                                                     '%(name)s'))),
-                Field('generated_id', 
-                      'string', 
-                      length=512, 
+                Field('generated_id',
+                      'string',
+                      length=512,
                       writable=False),
                 Field('parent_term', 'reference term'),
                 Field('merged', 'boolean', writable=False),
                 Field('merge_status', 'string', length=64),
+                Field('uids', 'reference uid'),
                 format='%(name)s',
                 migrate=False)
 
@@ -266,6 +302,7 @@ db.define_table('taxonomy_authority',
                 Field('name', 'string', length=512),
                 format='%(name)s',
                 migrate=False)
+
 
 db.define_table('evidence_code',
                 Field('long_name', 'string', length=512),
@@ -296,6 +333,7 @@ def render_participant(r):
 
 VALID_QUANTIFICATIONS = ["some", "individual"]
 
+# although not empty, the taxon, anatomy, and substrate fields are obsolete
 db.define_table('participant',
                 Field('taxon', 'reference term'),
                 Field('anatomy', 'reference term'),
@@ -324,10 +362,12 @@ db.define_table('participant',
                       writable=False,
                       ondelete='NO ACTION'),
                 Field('publication_text', 'string', length=512),
+                ##TODO: remove
                 Field('participation_property', 'reference property'),
                 Field('head_element',
                       'reference participant_element',
                       writable=False),
+                Field('uids', 'reference uids'),
                 format=render_participant,
                 migrate=True)
 
@@ -344,7 +384,7 @@ db.participant.substrate.requires = IS_EMPTY_OR(IS_IN_DB(substrate_domains,
 
 db.define_table('claim',
                 Field('publication', db.publication),
-                Field('narrative', 
+                Field('narrative',
                       'reference narrative',
                       requires=IS_EMPTY_OR(IS_IN_DB(db,
                                                     'narrative.id',
@@ -358,6 +398,7 @@ db.define_table('claim',
                                                     render_participant))),
                 Field('evidence', 'reference evidence_code'),
                 Field('generated_id', 'string', writable=False),
+                Field('uids', 'reference uids'),
                 format='Claim: %(generated_id)s',
                 migrate=False)
 
