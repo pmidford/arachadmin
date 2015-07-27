@@ -32,9 +32,10 @@ db = DAL("mysql://%s:%s@%s/%s" % (user, password, host, dbname), migrate=False)
 # table of source and generated id's - this makes sure that generated id's are
 # unique across appropriate tables (publications, individuals, participants, etc.)
 db.define_table(
-    'uids',
+    'uidset',
     Field('source_id', 'string', length=256),
     Field('generated_id', 'string', length=64, unique=True),
+    Field('ref_id', 'string', length=64, unique=True),
     migrate=False)
 
 
@@ -91,8 +92,8 @@ db.define_table(
                                       'publication_curation.id',
                                       '%(status)s'))),
     Field('curation_update', 'datetime'),
-    Field('uids','reference uid',
-          requires=IS_EMPTY_OR(IS_IN_DB(db,'uids.id','%(id)s'))),
+    Field('uidset','reference uidset',
+          requires=IS_EMPTY_OR(IS_IN_DB(db,'uidset.id','%(id)s'))),
     format='%(author_list)s (%(publication_year)s)',
     migrate=False)
 
@@ -126,7 +127,7 @@ db.define_table('individual',
                 Field('generated_id', 'string', length=512, writable=False),
                 Field('label', 'string', length=64),
                 Field('term', 'reference term'),
-                Field('uids', 'reference uids'),
+                Field('uidset', 'reference uidset'),
                 migrate=False)
 
 
@@ -144,7 +145,7 @@ db.define_table('narrative',
                 Field('label', 'string', length=64),
                 Field('description', 'string', length=512),
                 Field('generated_id', 'string', length=512, writable=False),
-                Field('uids', 'reference uids'),
+                Field('uidset', 'reference uidset'),
                 format='%(label)s',
                 migrate=False)
 
@@ -202,7 +203,7 @@ db.define_table('term',
                       'string',
                       writable=False),
                 Field('comment', 'string'),
-                Field('uids', 'reference uids'),
+                Field('uidset', 'reference uidset'),
                 format='%(label)s',
                 migrate=False)
 
@@ -288,7 +289,7 @@ db.define_table('taxon',
                 Field('parent_term', 'reference term'),
                 Field('merged', 'boolean', writable=False),
                 Field('merge_status', 'string', length=64),
-                Field('uids', 'reference uid'),
+                Field('uidset', 'reference uidset'),
                 format='%(name)s',
                 migrate=False)
 
@@ -357,7 +358,7 @@ db.define_table('participant',
                 Field('head_element',
                       'reference participant_element',
                       writable=False),
-                Field('uids', 'reference uids'),
+                Field('uidset', 'reference uidset'),
                 format=render_participant,
                 migrate=False)
 
@@ -388,7 +389,7 @@ db.define_table('claim',
                                                     render_participant))),
                 Field('evidence', 'reference evidence_code'),
                 Field('generated_id', 'string', writable=False),
-                Field('uids', 'reference uids'),
+                Field('uidset', 'reference uidset'),
                 format='Claim: %(generated_id)s',
                 migrate=False)
 

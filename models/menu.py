@@ -5,10 +5,10 @@
 # # Customize your APP title, subtitle and menus here
 #########################################################################
 
-# response.logo = A(B('web',SPAN(2),'py'),XML('&trade;&nbsp;'),
-#                  _class="brand",_href="http://www.web2py.com/")
+response.logo = A(B('Arachadmin Curation Tool'),
+                 _class="brand",_href="http://arachb.org")
 response.title = request.application
-response.subtitle = T('Arachnolingua bridge database administration tool')
+#response.subtitle = T('Arachnolingua bridge database administration tool')
 
 # # read more at http://dev.w3.org/html5/markup/meta.name.html
 response.meta.author = 'Peter E. Midford <peter.midford@gmail.com>'
