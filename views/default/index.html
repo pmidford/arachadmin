@@ -7,6 +7,12 @@
 
 {{block center}}
 <p>Arachnolingua contains {{=len(publications)}} publications and {{=len(claims)}} claims </p>
+<h1>Current publications</h1>
+<ul>
+{{for pub in publications:}}
+{{=LI(pub.author_list,"  ",pub.publication_year)}}
+{{pass}}
+</ul>
 {{end}}
 
 
