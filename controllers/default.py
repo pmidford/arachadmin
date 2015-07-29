@@ -50,7 +50,7 @@ def enter():
 
 def uid_update():
     import uid_tools
-    uid_tools.update_uids(db)
+    uid_tools.update_uidsets(db)
     return {'result': 'Success'}
 
 # web2py defaults, not exposed
