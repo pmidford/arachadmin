@@ -65,6 +65,15 @@ db.define_table(
     format='%(id)s',
     migrate=False)
 
+def render_citation(p):
+    """
+    generates a (hopefull unique) citation string for a publication
+    that will fit in a dropdown
+    """
+    import publication_tools
+    return publication_tools.make_citation(p.author_list,p.publication_year)
+
+
 # main table for publications - reflects a spreadsheet used previously
 db.define_table(
     'publication',
@@ -94,7 +103,7 @@ db.define_table(
     Field('curation_update', 'datetime'),
     Field('uidset','reference uidset',
           requires=IS_EMPTY_OR(IS_IN_DB(db,'uidset.id','%(id)s'))),
-    format='%(author_list)s (%(publication_year)s)',
+    format=render_citation,
     migrate=False)
 
 # allows ordering of authors on a publication

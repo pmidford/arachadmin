@@ -33,8 +33,7 @@ def make_participant_fields(participant_id):
               'publication_anatomy',
               'publication_substrate',
               'publication_text',
-              'participation_property',
-              'generated_id']
+              'participation_property']
     if participant_id:
         return SQLFORM(db.participant, record=participant_id, fields=fields)
     else:

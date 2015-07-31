@@ -3,7 +3,8 @@
 occurances of behavior)"""
 
 PART_OF_URI = 'http://purl.obolibrary.org/obo/BFO_0000050'
-PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/BFO_0000056'
+PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/RO_0000056'
+HAS_PARTICIPANT_URI = 'http://purl.obolibrary.org/obo/RO_0000057'
 ACTIVELY_PARTICIPATES_IN_URI = 'http://purl.obolibrary.org/obo/RO_0002217'
 
 
